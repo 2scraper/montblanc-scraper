@@ -1460,6 +1460,60 @@ BANNED_WORDING = (
 )
 
 
+def check_ci_calls_the_shared_checks_rather_than_restating_them():
+    """§17: one implementation, invoked from both — asserted, not assumed.
+
+    This repo's FIRST CI run failed on exactly this. `tests.yml` carried
+    INLINE reimplementations of the `--help` and sample-output checks that
+    `.github/ci_checks.py` already implements. The inline sample check still
+    imported `output_writer.Business` — a class this repo renamed to
+    `Product` — so the job died with ImportError while `ci_checks.py` passed
+    on the same tree. One copy had been updated and the other had not, and
+    nothing in the repo could see the difference.
+
+    The guard triggers on the whole `.github` directory being absent, never
+    on a file inside it being missing (§22): two suites in this family run
+    INSIDE the Docker image, which deliberately COPYs no `.github/`, so a
+    check that reads a workflow file is correct in the repo and red in the
+    image. A check that quietly starts passing once its input disappears is
+    the failure mode this one is guarding against, so the escape is the
+    directory, not the file.
+    """
+    github_dir = os.path.join(HERE, ".github")
+    if not os.path.isdir(github_dir):
+        skip("ci wiring", "no .github/ directory (this is the Docker image, "
+                          "which deliberately carries no CI material)")
+        return
+
+    workflow = os.path.join(github_dir, "workflows", "tests.yml")
+    script = os.path.join(github_dir, "ci_checks.py")
+    check("ci_checks.py exists", os.path.exists(script))
+    check("tests.yml exists", os.path.exists(workflow))
+    if not (os.path.exists(workflow) and os.path.exists(script)):
+        return
+
+    text = open(workflow, encoding="utf-8").read()
+    for flag in ("--help-check", "--sample-check", "--secret-check"):
+        check("tests.yml invokes ci_checks.py %s" % flag,
+              "ci_checks.py" in text and flag in text,
+              "the workflow must CALL the shared check, not restate it")
+
+    # The positive direction is not enough on its own: the workflow could
+    # call the script AND still carry a stale inline copy beside it, which is
+    # exactly the state that broke the first run. So assert the tell-tales of
+    # a reimplementation are gone.
+    # Deliberately NOT keyed on the filename. `sample_output.json` appears
+    # legitimately in the docker job, which asserts the IMAGE does not carry
+    # it — so a filename tell-tale fails on a correct workflow, which is its
+    # own kind of check nobody can read. What actually distinguishes a
+    # reimplementation is inline Python that imports the row model or
+    # dataclass machinery to rebuild the expected column list.
+    for tell in ("from output_writer import", "asdict("):
+        check("tests.yml does not reimplement the sample check (%r)" % tell,
+              tell not in text,
+              "an inline copy drifts from the shared one silently")
+
+
 def check_banned_wording():
     """§12: enforced by this test rather than by review."""
     for root, dirs, files in os.walk(HERE):
