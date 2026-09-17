@@ -525,6 +525,14 @@ def check_supported_urls_are_refused_with_a_true_reason():
     check("url: the bare host is refused", not ok)
     check("url: because it has no locale", "locale" in why.lower(), why)
 
+    # The reason must not repeat the URL: every caller already prefixes it,
+    # and two copies of the address in one sentence reads like a bug.
+    for bad in ("https://www.montblanc.com/", "ftp://montblanc.com/en-us/x",
+                "https://example.com/en-us/x"):
+        ok, why = is_supported_url(bad)
+        check("url: the refusal for %r does not repeat the address" % bad,
+              bad not in why, why)
+
     # THE ONE THAT COST A LIVE RUN. `en-fi` is a real market that the site
     # geo-redirects Finnish visitors to, and it is absent from the country
     # selector's own list because that list omits whichever locale it was

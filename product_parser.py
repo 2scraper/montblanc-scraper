@@ -324,13 +324,17 @@ def is_supported_url(url: str) -> Tuple[bool, str]:
 
     §5: refuse a host WITH THE REASON, and never with a reason that sends the
     reader looking for a typo they did not make.
+
+    The reason NEVER repeats the URL. Every caller prefixes it with the URL
+    already (`p.error(f"{url!r} {why}.")`), and a reason that names it too
+    prints the address twice in one sentence.
     """
     parts = _split(url)
     if parts.scheme not in ("http", "https"):
-        return False, f"{url!r} is not an http(s) URL"
+        return False, "is not an http(s) URL"
     host = (parts.hostname or "").lower()
     if not host:
-        return False, f"{url!r} has no hostname"
+        return False, "has no hostname"
     if host not in HOSTS:
         # No count in this message on purpose (§13): the number of markets
         # is a living thing and a stale figure in an error message reads as
@@ -341,9 +345,9 @@ def is_supported_url(url: str) -> Tuple[bool, str]:
                        f"(/en-us/…, /ja-jp/…)")
     loc = locale_from_url(url)
     if loc is None:
-        return False, (f"{url!r} has no locale segment — Montblanc addresses "
-                       f"every page as /{{locale}}/… (e.g. /en-us/bags). The "
-                       f"bare host only geo-redirects to one.")
+        return False, ("has no locale segment — Montblanc addresses every "
+                       "page as /{locale}/… (e.g. /en-us/bags). The bare host "
+                       "only geo-redirects to one.")
     # Shape only — see KNOWN_LOCALES for why this is not an allowlist.
     return True, ""
 
