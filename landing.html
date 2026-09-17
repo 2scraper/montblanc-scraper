@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2scraper — Montblanc Scraper</title>
+<meta name="description" content="Open-source Montblanc (montblanc.com) scraper — three engines, JSON/CSV, Montblanc ratings, accreditation and complaint counts. Search and category modes need no account.">
+<style>
+  :root{
+    --bg:#0F1419;
+    --panel:#171D24;
+    --panel-2:#131920;
+    --line:#26303B;
+    --text:#D8DEE6;
+    --muted:#8792A0;
+    --accent:#4A9EE8;
+    --grade:#37C978;
+    --warn:#E8B94A;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.6;}
+  a{color:var(--accent); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  .wrap{max-width:1000px; margin:0 auto; padding:0 24px;}
+
+  header.topbar{border-bottom:1px solid var(--line); background:var(--panel-2);}
+  .topbar-inner{display:flex; align-items:center; justify-content:space-between;
+                padding:16px 24px; max-width:1000px; margin:0 auto; gap:16px; flex-wrap:wrap;}
+  .logo{font-family:var(--mono); font-weight:700; font-size:14px; letter-spacing:.05em;}
+  .logo span{color:var(--muted);}
+  nav a{color:var(--muted); font-family:var(--mono); font-size:12.5px; margin-left:20px;}
+  nav a:hover{color:var(--accent);}
+
+  .hero{padding:72px 0 56px; border-bottom:1px solid var(--line);}
+  .hero h1{font-size:40px; line-height:1.15; margin:0 0 18px; letter-spacing:-.02em;}
+  .hero .lede{font-size:18px; color:var(--text); max-width:70ch; margin:0 0 14px;}
+  .hero .sub{font-size:16px; color:var(--muted); max-width:70ch; margin:0 0 28px;}
+  .cta{display:inline-block; background:var(--accent); color:#06121D; font-weight:600;
+       padding:11px 20px; border-radius:6px; font-size:15px;}
+  .cta:hover{text-decoration:none; filter:brightness(1.08);}
+  .cta.secondary{background:transparent; color:var(--text); border:1px solid var(--line); margin-left:10px;}
+
+  section{padding:52px 0; border-bottom:1px solid var(--line);}
+  h2{font-size:25px; margin:0 0 16px; letter-spacing:-.01em;}
+  h3{font-size:17px; margin:26px 0 8px;}
+  p{max-width:74ch;}
+  .muted{color:var(--muted);}
+
+  .callout{background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--grade);
+           border-radius:6px; padding:20px 22px; margin:22px 0; max-width:78ch;}
+  .callout.warn{border-left-color:var(--warn);}
+  .callout p:last-child{margin-bottom:0;}
+
+  pre{background:var(--panel-2); border:1px solid var(--line); border-radius:6px;
+      padding:16px 18px; overflow-x:auto; font-family:var(--mono); font-size:13px;
+      color:var(--text); line-height:1.5;}
+  code{font-family:var(--mono); font-size:.92em; color:var(--text);}
+  p code, li code, td code{background:var(--panel); border:1px solid var(--line);
+                           border-radius:4px; padding:1px 5px;}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:16px; margin-top:22px;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:18px 20px;}
+  .card h3{margin:0 0 8px; font-size:15px;}
+  .card p{margin:0; font-size:14px; color:var(--muted);}
+
+  .table-scroll{overflow-x:auto; margin-top:18px;}
+  table{border-collapse:collapse; width:100%; min-width:520px; font-size:14.5px;}
+  th,td{text-align:left; padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top;}
+  th{color:var(--muted); font-weight:600; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em;}
+  .yes{color:var(--grade); font-weight:600;}
+  .no{color:var(--warn); font-weight:600;}
+
+  ul{max-width:76ch;}
+  li{margin-bottom:7px;}
+
+  footer{padding:36px 0 56px; color:var(--muted); font-size:14px;}
+  footer p{max-width:74ch;}
+
+  @media (max-width:640px){
+    .hero{padding:48px 0 40px;}
+    .hero h1{font-size:30px;}
+    .cta.secondary{margin-left:0; margin-top:10px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="logo">2scraper<span> / montblanc-scraper</span></div>
+    <nav>
+      <a href="#measured">What was measured</a>
+      <a href="#traps">Site behaviour</a>
+      <a href="#products">2Captcha</a>
+      <a href="https://github.com/2scraper/montblanc-scraper">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <h1>Montblanc Scraper</h1>
+    <p class="lede">Open-source Montblanc scraper for montblanc.com — three engines,
+      your own infrastructure by default, and 2Captcha's paid products only where they are
+      actually needed.</p>
+    <p class="sub">Business listings and full product profiles: name, address, phone numbers,
+      Montblanc letter grade, accreditation status and date, categories, coordinates, complaint and
+      review counts — into JSON or CSV.</p>
+    <a class="cta" href="https://github.com/2scraper/montblanc-scraper">View source on GitHub</a>
+    <a class="cta secondary" href="https://github.com/2scraper/montblanc-scraper#readme">Read the README</a>
+  </div>
+</div>
+
+<section id="measured">
+  <div class="wrap">
+    <h2>What was actually measured</h2>
+
+    <div class="callout">
+      <p><strong>The search and category modes need no account, no key and no proxy.</strong></p>
+      <p>Montblanc renders its listings out of its own JSON endpoint, and that endpoint is not behind
+        Cloudflare. Measured on 2026-09-16 from a datacenter VPS — an address that gets
+        <strong>HTTP 403 on every HTML page on the site</strong> — the endpoint answered
+        <strong>HTTP 200 with 15 complete product records</strong>. A two-page run from that
+        machine, with no credentials configured at all, returned 30 rows and
+        <code>status: complete</code>.</p>
+    </div>
+
+    <p>We say that plainly instead of selling around it. What the paid products buy on this site
+      is <strong>one specific thing</strong>: a product <em>profile</em> page, which is
+      Cloudflare-gated and has no endpoint behind it — so accreditation dates, complaint counts
+      and the full rating rationale are reachable only through a rendered page from a residential
+      exit.</p>
+
+    <div class="table-scroll">
+      <table>
+        <tr><th></th><th>Listings (search, category)</th><th>Profiles</th></tr>
+        <tr><td>Behind Cloudflare</td><td class="yes">no</td><td class="no">yes, HTTP 403</td></tr>
+        <tr><td>Needs a 2Captcha key</td><td class="yes">no</td><td class="yes">no</td></tr>
+        <tr><td>Needs a residential exit</td><td class="yes">no</td><td class="no">yes</td></tr>
+        <tr><td>Measured from a datacenter IP</td><td class="yes">200 — 30 rows, complete</td><td class="no">403</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>What you get</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Three engines, one schema</h3>
+        <p>Playwright (primary), Selenium and Puppeteer via pyppeteer — identical rows and exit
+          codes — plus a browserless client for 2Captcha's Scraper API.</p>
+      </div>
+      <div class="card">
+        <h3>Three modes</h3>
+        <p>A keyword search, a category listing, or a single product profile. A profile row
+          joins a listing row on the same key.</p>
+      </div>
+      <div class="card">
+        <h3>No DOM scraping</h3>
+        <p>Reads Montblanc's own embedded state payload — the same object its endpoint returns — so
+          there is no fragile selector anywhere in the primary path.</p>
+      </div>
+      <div class="card">
+        <h3>JSON, CSV and a sidecar</h3>
+        <p>A documented 53-column schema, plus a <code>.meta.json</code> per run recording status,
+          pages completed and Montblanc's own result arithmetic.</p>
+      </div>
+      <div class="card">
+        <h3>340 offline checks</h3>
+        <p>Run with no network and no engine library installed, on fixtures cut from real
+          captures.</p>
+      </div>
+      <div class="card">
+        <h3>A canary with no secrets</h3>
+        <p>A real 3-page scrape runs daily from a bare CI runner — which is also what keeps the
+          claim above honest.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="traps">
+  <div class="wrap">
+    <h2>Three things about Montblanc worth knowing before you start</h2>
+
+    <h3>1. &ldquo;Best Match&rdquo; is not a relevance ordering</h3>
+    <p>Montblanc's own default sort returned <strong>15 of 15 Montblanc Accredited products</strong> on
+      every page tested and, for a search on <code>restaurants</code>, not one restaurant. The
+      same query sorted A&ndash;Z returned <strong>0 of 15 accredited</strong> and real
+      name-matched restaurants. This scraper defaults to A&ndash;Z and records the ordering as a
+      column, because it changes <em>which</em> products end up in your file rather than just
+      their order.</p>
+
+    <h3>2. A complete run can still be a small sample</h3>
+    <p>Montblanc caps every query at 15 pages of 15 &mdash; 225 rows &mdash; however many it matched.
+      One measured search reported <strong>19,016 results</strong>. The run is genuinely
+      complete; the sidecar records both numbers so you can tell &ldquo;complete&rdquo; from
+      &ldquo;exhaustive&rdquo;.</p>
+    <pre>{"status": "complete", "total_results": 19016, "pages_available": 15,
+ "capped_by_site": true, "reachable_max": 225}</pre>
+
+    <h3>3. An unrated product is not rated zero</h3>
+    <p>Montblanc returns an empty grade with a score of <code>0.0</code> for a product it has not
+      graded. Written through, that zero quietly drags every average you compute, so both columns
+      come back null instead.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Get started</h2>
+    <pre>git clone https://github.com/2scraper/montblanc-scraper.git
+cd montblanc-scraper
+pip install -r requirements.txt -r requirements-playwright.txt
+playwright install chromium
+
+python playwright_scraper.py --text restaurants --location "New York, NY" --pages 3</pre>
+    <p class="muted">No key, no proxy, no account. Output lands in
+      <code>montblanc_products.json</code>, <code>montblanc_products.csv</code> and a
+      <code>.meta.json</code> sidecar.</p>
+  </div>
+</section>
+
+<section id="products">
+  <div class="wrap">
+    <h2>2Captcha products, when you want them</h2>
+    <div class="table-scroll">
+      <table>
+        <tr><th>Product</th><th>What it is for on this site</th></tr>
+        <tr><td>Residential proxies</td>
+            <td>The thing that makes profile mode work. Montblanc refuses a datacenter address
+              outright &mdash; measured identical on six consecutive attempts over 30 seconds,
+              headless and headful alike.</td></tr>
+        <tr><td>Scraping Browser API</td>
+            <td>A remote browser you do not run or patch, with a chosen exit country. Every live
+              profile measurement in the README was taken through it.</td></tr>
+        <tr><td>Captcha solving</td>
+            <td>For Montblanc's Managed Challenge only. The site refuses in two shapes and only one is
+              a solvable test &mdash; the scraper tells them apart and never spends on the
+              other.</td></tr>
+        <tr><td>Fingerprints</td>
+            <td>A consistent device identity for a local browser.</td></tr>
+      </table>
+    </div>
+    <p style="margin-top:18px;">One key, four separately-billed products:
+      <a href="https://2captcha.com">2captcha.com</a></p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>What it deliberately does not do</h2>
+    <div class="callout warn">
+      <p>Montblanc lists a product's officers by name. There is <strong>no column for them</strong>,
+        and the committed test fixtures carry placeholders instead: republishing a named person's
+        details is a separate act from the site showing them on its own page.</p>
+    </div>
+    <p>It reads public pages only, never submits Montblanc's review or complaint forms, and defaults to
+      a 2-second delay between pages.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>MIT licensed. Not affiliated with or endorsed by the Montblanc.
+      Rate limits, terms of service and the legality of scraping in your jurisdiction are your
+      responsibility as the operator.</p>
+    <p><a href="https://github.com/2scraper/montblanc-scraper">github.com/2scraper/montblanc-scraper</a>
+      &nbsp;·&nbsp; <a href="https://2captcha.com">2captcha.com</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
