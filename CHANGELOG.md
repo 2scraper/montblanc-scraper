@@ -8,6 +8,64 @@ CLI toolkit can. A PATCH release means fixes — it does not promise that every
 flag and default is frozen, so a behaviour-changing default can appear in one.
 When it does, the release notes lead with it.
 
+## [0.1.1] — 2026-09-18
+
+A pass back over CLAUDE.md, section by section, checking each claim against
+the repo rather than against memory. It found one missing signal, one
+coverage floor that fires on correct data, and three pieces of stale
+presentation.
+
+### Added
+
+- **A served page that links to products and parses to ZERO rows now says so
+  by name** (§20). It reports `stop_reason: parser_found_nothing`, is
+  excluded from `COMPLETE_STOP_REASONS`, and the canary fails on it by name.
+  Reported as plain "0 products" it would send the reader to check the URL
+  when the thing that moved is the parser. The exit code is unchanged —
+  the catalogue question really was answered — so only the status and the
+  reason carry the distinction.
+
+  §20 also says to check such a signal CAN fire before adding it: here it
+  can, because the tile fallback needs a `data-pid` element as well as a
+  product href, so markup that loses its tiles while keeping its links lands
+  exactly there.
+
+### Fixed
+
+- **`image_url` is no longer in the 99% coverage floor.** Montblanc's own
+  ItemList can name a product it renders no tile for, and such an entry
+  carries `"image": null` and `"brand": null` in the JSON-LD as well — so
+  there is nothing on the page to read. Measured: 1 row of 92 on a four-page
+  live run (`MB127852M`). The floor was firing on correct data, which is the
+  behaviour that teaches readers to ignore floors. The figure is still
+  reported on every page.
+- **The repo description was 29 words**, against the 15–25 the family notes
+  ask for. Now 23.
+- **A stale check count inherited from a sibling repo** (`~339 checks`) was
+  sitting in `pyproject.toml`, already wrong on arrival — §13's trap exactly.
+  Removed rather than updated: `python3 smoke_test.py` prints the real one.
+
+### Measured
+
+Negative results, recorded because "we did not implement it" and "the site
+has none" are different facts and only the second justifies the omission.
+All on 2026-09-17/18:
+
+- **No captcha is wired on this site at all** — 0 `data-sitekey`, 0
+  `*_SITE_KEY`, 0 `<captcha-*>` elements, 0 reCAPTCHA/Turnstile/hCaptcha
+  references across listing, product and home pages. That is stronger than
+  "no challenge was rendered", which is all a sibling repo could say.
+- **No `<link rel="next">` on any listing kind**, so the selector layer of
+  the family's three-layer pagination rule is unavailable here and the
+  remaining two (a verified `start`/`sz` convention, and the data running
+  out) are the whole of it.
+- **No cents-dash prices** (`349,– €`) on `en-fi`, `de-de` or `en-us`, and
+  **no instalment text inside any price node** — so neither guard is ported.
+- **Headless and headful both work**: 2/2 and 2/2, 24 rows either way. This
+  site does not discriminate, unlike foodpanda where headless was 0/4.
+- **`--concurrency 3` verified live** across four pages: rows merged in page
+  order, `(page, position)` and `sku` unique, `status: complete`.
+
 ## [0.1.0] — 2026-09-17
 
 First release. Scrapes montblanc.com through Playwright, Selenium, pyppeteer
@@ -142,4 +200,5 @@ which caught two checks that were passing for the wrong reason, one because
 its fixture carried no carousel and one because its "escaped" fixture
 contained a marker verbatim.
 
+[0.1.1]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.1
 [0.1.0]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.0

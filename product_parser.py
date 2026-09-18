@@ -929,6 +929,26 @@ def references_own_assets(html: str) -> int:
 _MIN_ASSET_REFERENCES = 2
 
 
+# Distinct product URLs in the markup, however they are linked.
+#
+# This exists to tell a BROKEN PARSER apart from an EMPTY CATEGORY (§20). A
+# page that Montblanc served, that links to products, and that parses to zero
+# rows is OUR bug — but reported as "0 products" it sends the reader to check
+# the URL instead of the parser, which is the wrong half of the system.
+#
+# §20 also says to check the signal CAN fire before adding it. It can here:
+# the tile fallback needs a `data-pid` element AND a product href, so a page
+# whose grid markup changed shape while its links survived yields links > 0
+# and rows == 0. (On a site whose fallback emitted a row per link, this could
+# never fire and would be dead code that looks load-bearing.)
+_PRODUCT_HREF_RE = re.compile(r'href="([^"]*-MB\d+[A-Za-z]*\.html)(?:[?#][^"]*)?"', re.I)
+
+
+def product_link_count(html: str) -> int:
+    """How many DISTINCT products this markup links to."""
+    return len({m.group(1).lower() for m in _PRODUCT_HREF_RE.finditer(html or "")})
+
+
 def detect_page_state(html: str, status: Optional[int] = None,
                       url: str = "") -> Tuple[str, Optional[str]]:
     """Classify a fetched page: (state, detail).

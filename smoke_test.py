@@ -654,6 +654,82 @@ def check_fixtures_carry_no_session_material():
                   % (hit.group(0)[:40] if hit else ""))
 
 
+# A page Montblanc plainly SERVED, that links to products, and that this
+# parser turns into nothing. Built rather than captured, because the site
+# does not currently produce one — which is the point: this is the shape a
+# FUTURE markup change would take, and the signal has to exist before it
+# happens rather than after.
+SERVED_BUT_UNPARSEABLE_HTML = (
+    "<html><body>"
+    + '<img src="https://www.montblanc.com/on/demandware.static/a.png">' * 3
+    + "".join('<a href="/en-fi/some-bag-MB%06d.html">x</a>' % n
+              for n in range(111111, 111116))
+    + "</body></html>")
+
+
+def check_a_broken_parser_is_not_reported_as_an_empty_category():
+    """§20: a served page that links to N products and parses to zero is OUR
+    bug, and saying "0 products" sends the reader to check the URL instead.
+
+    §20 also says to check the signal CAN fire before adding it — if the
+    fallback emitted a row per product link it never could. Here it cannot:
+    the tile path needs a `data-pid` element as well as a href, so markup
+    that loses its tiles while keeping its links lands exactly here.
+    """
+    import page_flow
+    from product_parser import product_link_count, parse_products, detect_page_state
+
+    links = product_link_count(SERVED_BUT_UNPARSEABLE_HTML)
+    equal("parse-failure: the fixture links to products", links, 5)
+    equal("parse-failure: and parses to nothing",
+          len(parse_products(SERVED_BUT_UNPARSEABLE_HTML,
+                             "https://www.montblanc.com/en-fi/bags")), 0)
+    equal("parse-failure: while the page reads as served",
+          detect_page_state(SERVED_BUT_UNPARSEABLE_HTML, 200, "")[0], "empty")
+
+    check("parse-failure: that combination is flagged",
+          page_flow.looks_like_a_parse_failure("empty", 0, links))
+
+    # A genuinely empty category must NOT be flagged — that is a correct
+    # answer, and crying wolf on it is the failure this guards against.
+    equal("parse-failure: an empty category with no product links is not one",
+          page_flow.looks_like_a_parse_failure("empty", 0, 0), False)
+    equal("parse-failure: one stray link (a nav flyout) is not one",
+          page_flow.looks_like_a_parse_failure("empty", 0, 1), False)
+    # Nor is a page that parsed fine, nor a block.
+    equal("parse-failure: a page with rows is never one",
+          page_flow.looks_like_a_parse_failure("content", 24, 24), False)
+    equal("parse-failure: a BLOCKED page is not one either",
+          page_flow.looks_like_a_parse_failure("blocked", 0, 5), False)
+
+
+def check_parser_found_nothing_is_not_a_complete_run():
+    """The stop_reason must not read as success (§8: blocked != empty)."""
+    from output_writer import COMPLETE_STOP_REASONS, run_meta
+    check("parse-failure: 'parser_found_nothing' is NOT a complete stop reason",
+          "parser_found_nothing" not in COMPLETE_STOP_REASONS,
+          list(COMPLETE_STOP_REASONS))
+    meta = run_meta(status="failed", stop_reason="parser_found_nothing",
+                    pages_requested=1, pages_completed=0, pages_failed=[1],
+                    products=0, mode="category", source="montblanc.com",
+                    start_url="u", final_url="u")
+    equal("parse-failure: the sidecar carries the reason by name",
+          meta["stop_reason"], "parser_found_nothing")
+
+    # Every engine must be able to SET it, or the sidecar can never say it.
+    for module in ENGINES:
+        path = os.path.join(HERE, module + ".py")
+        if not os.path.exists(path):
+            continue
+        source = open(path, encoding="utf-8").read()
+        check("%s can report parser_found_nothing" % module,
+              "parser_found_nothing" in source,
+              "the engine never sets the stop_reason, so it is unreachable")
+        check("%s consults page_flow for it" % module,
+              "looks_like_a_parse_failure" in source,
+              "the engine must not reimplement the decision")
+
+
 def check_page_states_on_real_captures():
     from product_parser import detect_page_state
 
@@ -1729,7 +1805,7 @@ def check_every_engine_exposes_the_same_public_surface():
               outcome.ok)
         equal("%s shares CORE_FIELDS with its twins" % module,
               tuple(engine.CORE_FIELDS),
-              ("title", "url", "sku", "currency", "image_url"))
+              ("title", "url", "sku", "currency"))
         equal("%s shares PRICE_COVERAGE_FLOOR with its twins" % module,
               engine.PRICE_COVERAGE_FLOOR, 95)
         equal("%s shares CORE_FIELD_FLOOR with its twins" % module,

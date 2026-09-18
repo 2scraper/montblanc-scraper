@@ -155,6 +155,12 @@ a template default. The tile's own `item_available` was `soldout` on **7 of
 384**. The tile is what this scraper reads; where there is no tile (`--mode
 product`) the column is left `null` rather than filled with the default.
 
+**"0 products" might be our bug, not an empty category.** A page Montblanc
+served that links to products and parses to zero rows reports
+`stop_reason: parser_found_nothing` and does **not** count as a complete run
+— because "0 products" alone would send you to check the URL when the thing
+that moved is the parser. The canary fails on it by name.
+
 **A product page is not a small listing.** It publishes `ProductGroup`, not
 `ItemList`. Point the listing parser at one and it finds no products — and
 then, before this was guarded, its fallback returned the *"you may also like"*
@@ -165,9 +171,32 @@ sixteen rows, each with its own sku and price. The group's own price (EUR
 1000) is not any variant's price (EUR 850) — it is the price of the default
 configuration.
 
+**The ItemList can name a product the page renders no tile for.** Such an
+entry carries `"image": null` and `"brand": null` in the JSON-LD too, so
+`image_url`, `in_stock`, `collection` and `color` come back null and there is
+nothing anywhere on the page to read them from. Measured: 1 row of 92 on a
+four-page run (`MB127852M`). That is why `image_url` is reported but not
+floored — a coverage threshold that fires on correct data teaches you to
+ignore thresholds.
+
 **`brand` is `"montblanc"` on every row.** It is a single-brand house. The
 column is kept because the family schema has it in that position, not because
 it varies.
+
+### Things this site does NOT do
+
+Measured and found absent, so the code does not carry the machinery for them.
+Recorded because "we did not implement it" and "the site has none" are
+different facts, and only the second one justifies the omission:
+
+| Checked | Found | So |
+|---|---|---|
+| a captcha of any kind | **0** `data-sitekey`, `*_SITE_KEY`, `<captcha-*>`, reCAPTCHA / Turnstile / hCaptcha references on listing, product and home pages | nothing is wired here — not merely unrendered |
+| `<link rel="next">` | **0** on every listing kind | §7's selector layer is unavailable, so pagination rests on `start`/`sz` (verified against the site's own sort links) and on the data running out |
+| a cents dash (`349,– €`) | **0** across `en-fi`, `de-de`, `en-us` | the German-retail dash convention this family handles elsewhere is not used |
+| instalment text in a price node | **0** Klarna / instalment / financing strings | no risk of reading a monthly payment as a price |
+| struck-through / was-prices | **0** | no discount chain, hence no DOM price overlay |
+| headless vs headful | **2/2 and 2/2** — 24 rows either way | the site does not discriminate, unlike some siblings; headless is the default because nothing argues against it |
 
 ---
 

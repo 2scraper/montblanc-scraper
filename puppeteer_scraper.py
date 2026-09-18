@@ -73,7 +73,8 @@ from product_parser import (DEFAULT_LOCALE, DEFAULT_SORT, PAGE_SIZE, SORTS,
                             is_supported_url, locale_from_url,
                             locale_is_known, page_url, pages_available,
                             parse_listing, parse_product_detail,
-                            parse_products, references_own_assets, search_url,
+                            parse_products, product_link_count,
+                            references_own_assets, search_url,
                             total_results)
 from output_writer import (dedupe_by_key, finish_run, EXIT_API_ERROR,
                            SOURCE_DEFAULT)
@@ -96,7 +97,15 @@ ITEM_LINK_SELECTOR = page_flow.READY_SELECTOR_LISTING
 # those rows (the range-priced variant groups, recovered from the DOM), and
 # `size`, a watch/belt attribute present on 12%.
 CORE_FIELD_FLOOR = 99
-CORE_FIELDS = ("title", "url", "sku", "currency", "image_url")
+CORE_FIELDS = ("title", "url", "sku", "currency")
+
+# `image_url` is REPORTED but deliberately NOT floored, and that is a
+# measurement rather than a shrug. Montblanc's ItemList can name a product
+# whose grid tile the page does not render at all, and such an entry carries
+# `"image": null` and `"brand": null` in the JSON-LD too — so there is
+# nothing anywhere on the page to read. Measured on a live 4-page run:
+# 1 row of 92 (MB127852M), which is under a 99% floor and is CORRECT DATA.
+# A floor that fires on healthy pages teaches the reader to ignore floors.
 
 # The share of rows that must carry a usable price. Both `jsonld` and
 # `dom_range` count, so this fires on a parsing break rather than on the
@@ -829,7 +838,33 @@ def _fetch_one_page(session, args, pool, page_num: int, url: str) -> PageOutcome
                             "would get %r and a different set of products.",
                             listing.site_default_sort)
 
+    # §20: tell a BROKEN PARSER apart from an EMPTY CATEGORY before anything
+    # downstream reports "0 products" and sends the reader to check the URL.
+    if not products and page_flow.looks_like_a_parse_failure(
+            state, len(products), product_link_count(html or "")):
+        links = product_link_count(html or "")
+        dump = f"{args.out}_page{page_num}_debug.html"
+        with open(dump, "w", encoding="utf-8") as f:
+            f.write(html or "")
+        logger.error(
+            "Page %d links to %d product(s) and parsed to ZERO rows. "
+            "Montblanc served this page — this is a failure in THIS parser, "
+            "not an empty category and not a block. Saved to %s; the first "
+            "thing to check is the JSON-LD (an ItemList that was renamed or "
+            "dropped), then the tile markup. Reported as stop_reason "
+            "'parser_found_nothing' so it cannot be read as a complete run.",
+            page_num, links, dump)
+        outcome.state = "parse_failed"
+
     if products:
+        images = sum(1 for row in products if row.image_url)
+        if images < len(products):
+            logger.info("Page %d: %d/%d rows carry an image. Montblanc's own "
+                        "ItemList sometimes names a product it renders no "
+                        "tile for, and those entries have no image in the "
+                        "JSON-LD either — so this is reported, not floored.",
+                        page_num, images, len(products))
+
         for field_name in CORE_FIELDS:
             filled = sum(1 for row in products
                          if getattr(row, field_name, None) not in (None, "", []))
@@ -932,6 +967,10 @@ def scrape(args) -> int:
             stop_reason = ("page_load_timeout" if first.load_failed
                            else f"blocked_{first.blocked_by}")
             blocked = first.blocked_by is not None
+        elif first.state == "parse_failed":
+            # Served, linked to products, parsed to nothing: OUR bug, and it
+            # must not reach the sidecar as a complete run (§20).
+            stop_reason = "parser_found_nothing"
         elif args.mode != "product":
             seen_keys.update(p.sku for p in first.products if p.sku is not None)
 

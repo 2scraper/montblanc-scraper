@@ -517,6 +517,11 @@ def save(rows: Sequence[Any], out_prefix: str, fmt: str,
 # page because one page is all there is. Note that it still emits MANY rows
 # — one per variant — so "single page" is a statement about fetching, not
 # about the size of the output.
+# Note "parser_found_nothing" is deliberately ABSENT. A page Montblanc served
+# that links to products and parsed to zero rows is OUR failure, not a
+# complete answer, and a run that ends that way must not report `complete`
+# (§20). Its exit code stays EXIT_NO_PRODUCTS — the catalogue question really
+# was answered — so only the status and the stop_reason carry the distinction.
 COMPLETE_STOP_REASONS = ("completed", "pagination_exhausted", "no_new_products",
                          "page_cap_reached", "single_page_mode")
 

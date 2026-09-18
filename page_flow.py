@@ -260,6 +260,32 @@ def ua_will_be_refused(user_agent: Optional[str]) -> bool:
     return bool(_CLIENT_LIBRARY_UA_RE.search(user_agent or ""))
 
 
+# How many product links a SERVED page must carry before "we parsed nothing"
+# is reported as OUR failure rather than as an empty category (§20).
+#
+# Two rather than one: a single stray product link can appear in a nav
+# flyout or a "recently viewed" strip on a page that genuinely lists no
+# products, and calling that a parser failure would cry wolf on a correct
+# answer. A real grid links to far more than two.
+PARSE_FAILURE_MIN_LINKS = 2
+
+
+def looks_like_a_parse_failure(state: str, rows: int, link_count: int) -> bool:
+    """True when the page was SERVED, links to products, and parsed to zero.
+
+    That combination is this repo's bug, not the site's, and it deserves to
+    say so by name — "0 products" sends the reader to check the URL when the
+    thing to check is the parser. Deliberately NOT a new exit code: the
+    catalogue question really was answered, so it stays EXIT_NO_PRODUCTS and
+    only the `stop_reason` differs (§20).
+    """
+    if rows:
+        return False
+    if state not in ("content", "empty"):
+        return False
+    return link_count >= PARSE_FAILURE_MIN_LINKS
+
+
 STATE_POLICY = {
     # A page with the site's own structured data on it.
     "content":   {"retry": False, "solve": False, "blocked": False, "parse": True},

@@ -103,6 +103,16 @@ jobs:
               if not ok:
                   failures.append(f"{label}: {detail}")
 
+          # §20: fail on a parser failure BY NAME. "0 products" would send
+          # whoever reads this red badge to check the URL, when the thing
+          # that moved is the parser. This stop_reason means Montblanc served
+          # a page that links to products and we turned it into nothing.
+          want("not a parser failure",
+               meta.get("stop_reason") != "parser_found_nothing",
+               "Montblanc served a page linking to products and the parser "
+               "produced ZERO rows — check the JSON-LD (a renamed or dropped "
+               "ItemList) before checking the URL")
+
           want("status", meta["status"] == "complete", meta["status"])
           want("pages_completed", meta["pages_completed"] == 3,
                f'{meta["pages_completed"]} of 3')
