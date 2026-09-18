@@ -8,6 +8,67 @@ CLI toolkit can. A PATCH release means fixes — it does not promise that every
 flag and default is frozen, so a behaviour-changing default can appear in one.
 When it does, the release notes lead with it.
 
+## [0.1.2] — 2026-09-18
+
+> **Correction to v0.1.0 and v0.1.1.** Both said "no challenge of any kind
+> appeared — zero reCAPTCHA, Turnstile, DataDome, PerimeterX … markers". That
+> is true, and it reads as "this site has no bot management", which is FALSE.
+> Montblanc runs **Akamai Bot Manager**. It simply never challenged us.
+
+### Fixed
+
+- **The README now names the protection that is actually here.** Prompted by
+  a plain question — "did we meet a captcha, and which one?" — answered by
+  measuring rather than by re-reading the code (§21, which notes that a plain
+  question has twice been the cheapest bug-finding tool available).
+
+  The captcha count holds and got stronger: **0 markers of any vendor across
+  37 captures totalling 21.7 MB**, including not one occurrence of the
+  literal word *captcha*, and 0 `data-sitekey`.
+
+  But the marker scan reads HTML BODIES, and this site's bot management is
+  in the RESPONSE HEADERS: `_abck` and `bm_sz` cookies on every response,
+  `ak_p` server-timing, `x-akamai-transformed`, with Cloudflare in the chain
+  too (`cf-ray`, `server: cloudflare`). A body-only scan reports a clean
+  page and is not wrong — it is just not looking where the answer is. This
+  is §18's "'no challenge rendered' is not 'no captcha configured'" with the
+  evidence one layer out from where that section looks for it.
+
+  What was measured is that Bot Manager **never challenged**: `_abck` came
+  back with its `~-1~` validation field on all three consecutive fetches, so
+  no challenge was issued and no validation occurred. The honest claim is
+  "it did not challenge this kind of address today", not "there is nothing
+  here" — and volume, a worse-scored ASN or a policy change can each turn
+  that around.
+
+- **A stray `country-id` (Indonesia) in `env_config.py`'s endpoint example**,
+  inherited verbatim from tokopedia-scraper. Now `country-de`, which is a
+  market this repo actually discusses.
+
+### Added
+
+- A check pinning the finding in both directions: `_abck`, `bm_sz`, `ak_p`
+  and `x-akamai-transformed` must stay OUT of `BOT_CHALLENGE_MARKERS` (they
+  are on every GOOD response, so matching them would report a served
+  catalogue as blocked — the same mistake `akamai` itself would be), AND the
+  README must keep naming the bot manager, so "no captcha markers" can never
+  quietly become "no bot management". Both directions controlled.
+
+### Verified, not changed
+
+A full secret audit, since the repo is public:
+
+- **49 blobs across 75 objects** that have ever existed in this history —
+  nothing credential-shaped. Every `user:pass@`-shaped hit is a documentation
+  placeholder or a masking-test fixture.
+- **Zero 32-hex strings** anywhere in history.
+- **No `.env` was ever committed** — only `.env.example`.
+- **No repo secrets are set**, so nothing could leak through CI; the public
+  workflow logs carry no credential shapes either.
+- **Published artifacts are data only** (14 KB listing, 1.5 KB product) — no
+  `*_debug.html` page dump was ever uploaded.
+- Release notes, description, topics and the org-profile commit: clean.
+
 ## [0.1.1] — 2026-09-18
 
 A pass back over CLAUDE.md, section by section, checking each claim against
@@ -200,5 +261,6 @@ which caught two checks that were passing for the wrong reason, one because
 its fixture carried no carousel and one because its "escaped" fixture
 contained a marker verbatim.
 
+[0.1.2]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.2
 [0.1.1]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.1
 [0.1.0]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.0

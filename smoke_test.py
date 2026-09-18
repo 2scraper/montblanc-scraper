@@ -793,6 +793,44 @@ def check_markers_do_not_match_a_page_montblanc_serves():
           "challenges.cloudflare.com" in lowered, lowered)
 
 
+def check_bot_manager_cookies_are_not_markers():
+    """Akamai Bot Manager IS deployed here, and its tells must stay OUT.
+
+    Measured 2026-09-18 on a live listing fetch: Montblanc sets `_abck` and
+    `bm_sz` on every response, with `ak_p` server-timing and an
+    `x-akamai-transformed` header, and Cloudflare is in the chain too. None
+    of it is in the MARKUP — it is all response headers — which is why a
+    body-only marker scan reports a perfectly clean page and why this repo's
+    37-capture sweep found zero captcha markers of any kind.
+
+    That is worth pinning in BOTH directions:
+
+      * they must not become markers. They are on every GOOD response, so
+        matching them would report a served catalogue as blocked — the same
+        mistake `akamai` itself would be (§18).
+      * and the fact they exist must not be forgotten. `_abck` came back
+        `~-1~` on every fetch, meaning no challenge issued — so the honest
+        claim is "it did not challenge us", not "there is nothing here".
+        A future reader re-measuring the README's central claim needs to
+        know where to look, and it is not the HTML.
+    """
+    from product_parser import BOT_CHALLENGE_MARKERS
+    lowered = [m.lower() for m in BOT_CHALLENGE_MARKERS]
+    for cookie in ("_abck", "bm_sz", "ak_p", "x-akamai-transformed"):
+        check("bot-manager tell %r is NOT a marker" % cookie,
+              cookie not in lowered,
+              "it is set on every good response; matching it would report a "
+              "served page as blocked")
+
+    # And the README must not claim the site is unprotected, which is a
+    # different claim from "it did not challenge us" and would be false.
+    readme = open(os.path.join(HERE, "README.md"), encoding="utf-8").read()
+    check("the README names the bot manager that IS here",
+          "Akamai Bot Manager" in readme,
+          "saying only 'no captcha markers' reads as 'no bot management', "
+          "which is not what was measured")
+
+
 def check_a_marker_survives_both_encodings():
     """§20: the same refusal page reaches a parser spelled two ways.
 

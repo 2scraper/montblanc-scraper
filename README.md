@@ -37,9 +37,29 @@ AS24940) with no key, no proxy and no browser fingerprinting:
 | keyword search | HTTP 200 |
 | product page | HTTP 200 |
 
-No challenge of any kind appeared on any capture — zero reCAPTCHA, hCaptcha,
-Turnstile, DataDome, PerimeterX, Incapsula, Kasada and AWS WAF markers, and no
-`data-sitekey` anywhere on the site.
+No challenge of any kind appeared on any capture. Counted across **37
+captures (21.7 MB)** taken while building this: zero reCAPTCHA, hCaptcha,
+Turnstile, DataDome, PerimeterX, Incapsula, Kasada and AWS WAF markers, zero
+`data-sitekey`, and not one occurrence of the literal word *captcha*.
+
+**But the site is not unprotected, and that distinction matters.** Montblanc
+runs **Akamai Bot Manager** — it sets `_abck` and `bm_sz` cookies on every
+response, alongside `ak_p` server-timing and an `x-akamai-transformed`
+header — and Cloudflare sits in the chain too (`cf-ray`, `server:
+cloudflare`). None of that appears in the MARKUP, which is why a body-only
+marker scan reports a clean page; it lives in the response headers.
+
+What was measured is that Bot Manager **never challenged**: `_abck` came
+back with its `~-1~` validation field on every fetch, meaning no challenge
+was issued and no validation happened. So the honest claim is "no challenge
+today from this kind of address", not "no bot management here". Volume, a
+worse-scored ASN, or a policy change can each turn that around — and if one
+does, the refusal will arrive as a challenge page that
+`BOT_CHALLENGE_MARKERS` is already looking for.
+
+`_abck` and `bm_sz` are deliberately NOT in that marker set, for the same
+reason `akamai` is not: they are on every GOOD response, so matching them
+would report a served catalogue as blocked.
 
 So what do the paid products actually buy here? One thing mainly, and it is a
 real thing on this site:

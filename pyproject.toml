@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "montblanc-scraper"
-version = "0.1.1"
+version = "0.1.2"
 description = "Montblanc (montblanc.com) scraper: category listings, keyword searches, and product pages with their full variant table."
 readme = "README.md"
 license = "MIT"
