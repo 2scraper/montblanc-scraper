@@ -7,8 +7,8 @@ body:
       value: |
         Worth a look first, in this order:
 
-        - [TROUBLESHOOTING.md](../blob/main/TROUBLESHOOTING.md) — ordered by how
-          often each thing actually happens
+        - The README's "Traps that look like bugs" — each one was hit while
+          building this and looks like a defect until you know
         - The README section on the 2Captcha product you are using
         - `python3 env_config.py` — reports what credentials are configured,
           without printing them

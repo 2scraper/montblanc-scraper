@@ -536,7 +536,8 @@ def save(rows: Sequence[Any], out_prefix: str, fmt: str,
 # the site imposes no cap of its own, so the planned page count IS the whole
 # category (see run_meta). Walking off the end is cheap rather than harmful
 # — `start=288` on a 280-product category is HTTP 200 with an empty grid,
-# not the HTTP 500 that the same overshoot produces on BBB — but planning
+# not the HTTP 500 that the same overshoot produces on bbb-scraper's site —
+# but planning
 # against the stated count still saves the wasted fetch and keeps
 # `pages_available` honest in the sidecar.
 #

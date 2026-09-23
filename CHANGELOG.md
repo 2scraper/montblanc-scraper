@@ -8,6 +8,38 @@ CLI toolkit can. A PATCH release means fixes — it does not promise that every
 flag and default is frozen, so a behaviour-changing default can appear in one.
 When it does, the release notes lead with it.
 
+## [Unreleased]
+
+### Fixed — leftovers from the repos this one was bootstrapped from
+
+- **The Selenium and Puppeteer engines' "blocked" message described another
+  site.** It said a datacenter address was what gets refused (measured
+  2026-09-16, before this repo existed), pointed at a `--mode profile` this
+  repo does not have, and recorded `blocked_by: "cloudflare (hard block)"`
+  where the Playwright engine records `"edge refusal"` — so the three engines
+  disagreed on `stop_reason` for the same page. Both now say what the
+  Playwright engine says: an ordinary datacenter address is served here, so
+  check the User-Agent first, then try another exit.
+- The Playwright engine's no-pool re-fetch log line claimed a re-fetch "is
+  often what clears it" on this site, and a comment cited a 403-from-a-
+  datacenter measurement. Neither was measured on Montblanc; both removed.
+- `--dump-html` help in all three engines pointed at a `TROUBLESHOOTING.md`
+  that does not exist; it now points at the README's "Traps that look like
+  bugs". The question issue template had the same dead link.
+- `captcha_solver.py`'s module docstring and its "what is not here" note
+  described another site's Cloudflare gate. They now state what was measured
+  here: no challenge of any kind, Akamai present in the headers only.
+- The bug-report and site-changed issue templates were another site's, with
+  its URLs, its bot manager and its columns. Rewritten for montblanc.com from
+  the README.
+- `landing.html` described a business directory (grades, accreditation,
+  complaint counts, a 15-page cap). Rewritten from `landing.md`.
+- `requirements.txt` named another repo in its header; `.dockerignore`
+  listed another repo's output prefix instead of `montblanc_products.*`.
+- A few comments that compared with a sibling's site without naming it as a
+  sibling now name `bbb-scraper`; one smoke-test docstring said "BBB has not
+  been measured" where it meant this site.
+
 ## [0.1.2] — 2026-09-18
 
 > **Correction to v0.1.0 and v0.1.1.** Both said "no challenge of any kind

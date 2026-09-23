@@ -1,5 +1,5 @@
 name: Site changed / selectors broke
-description: Etsy changed something and the parser no longer matches.
+description: Montblanc changed something and the parser no longer matches.
 labels: ["site-change"]
 body:
   - type: markdown
@@ -7,10 +7,12 @@ body:
       value: |
         This is the most common way a scraper stops working, and it is worth its
         own report because the fix is different from a code bug: something on
-        etsy.com moved.
+        montblanc.com moved.
 
-        Useful to know before filing: the parser tries **JSON-LD first**, then a
-        CSS + URL-pattern fallback. Which one broke narrows the fix a lot.
+        Useful to know before filing: the parser reads the page's **JSON-LD
+        first** (`ItemList` on a listing, `ProductGroup` on a product page),
+        enriched from the tiles' own attributes, then a URL-pattern fallback.
+        Which one broke narrows the fix a lot.
 
   - type: dropdown
     id: what_broke
@@ -19,8 +21,8 @@ body:
       options:
         - Products (0 rows on a page that visibly has products)
         - A specific field is null or wrong (price, sku, image, URL)
-        - original_price or lowest_price_30d empty out (the tile overlay)
-        - DOM price confirmation dropped below 90% in the run log
+        - in_stock, collection or color empty out (the tile attributes)
+        - --mode product returns no variants
         - Pagination stops early or repeats a page
         - The captcha detector finds nothing on a page that has one
         - Something else
@@ -32,7 +34,7 @@ body:
     attributes:
       label: URL
       description: The exact listing URL, and the country your exit IP was in.
-      placeholder: "https://www.etsy.com/search?q=handmade+mug (locale: /de/, exit IP: DE residential, Scraping Browser pid: etsy1)"
+      placeholder: "https://www.montblanc.com/en-us/writing-instruments (exit IP: FI datacenter, local Chromium)"
     validations:
       required: true
 
@@ -45,7 +47,8 @@ body:
 
         - JSON-LD as the page actually serves it:
           `python3 -c "import json,sys,re;h=open('dump.html').read();print([m[:400] for m in re.findall(r'<script type=\"application/ld\\+json\">(.*?)</script>',h,re.S)][:2])"`
-        - Or open devtools and paste one `Product` node from the `ItemList`.
+        - Or open devtools and paste one `Product` node from the `ItemList`
+          (or the `ProductGroup` on a product page).
         - For a field problem: the value you got, and the value on the page.
       render: text
     validations:

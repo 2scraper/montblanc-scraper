@@ -617,10 +617,10 @@ def _fetch_one_page(session, args, pool, page_num: int, url: str) -> PageOutcome
             state = page_flow.classify(html, None, d["current_url"]())
 
         # The paid path is reached only for state "captcha" — a rendered
-        # Managed Challenge, which IS a test. It is NOT reached for
-        # "blocked": the hard "You have been blocked" page carries no widget
-        # and no sitekey, so a solve there would be a charge for nothing.
-        # Bounded by SOLVES_PER_PAGE. Mirrors playwright_scraper.
+        # widget, which IS a test. It is NOT reached for "blocked": an edge
+        # refusal carries no widget and no sitekey, so a solve there would be
+        # a charge for nothing. Bounded by SOLVES_PER_PAGE. Mirrors
+        # playwright_scraper.
         if (page_flow.should_solve(state)
                 and solves_bought < page_flow.SOLVES_PER_PAGE):
             solves_bought += 1
@@ -662,24 +662,29 @@ def _fetch_one_page(session, args, pool, page_num: int, url: str) -> PageOutcome
     outcome.state = state
 
     if state == "blocked":
-        # Montblanc refuses in TWO shapes and only one is solvable — see
-        # playwright_scraper's twin of this block. This is the HARD refusal:
-        # no widget, no sitekey, nothing a key could buy.
+        # Mirrors playwright_scraper's twin of this block: an edge refusal
+        # offers no widget and no sitekey, so what a reader needs is which
+        # refusal arrived and what to try, not a captcha hint.
         debug_html = f"{args.out}_page{page_num}_debug.html"
         with open(debug_html, "w", encoding="utf-8") as f:
             f.write(html or "")
+        assets = references_own_assets(html or "")
         logger.error(
-            "Montblanc did not serve this request — %d bytes, its own asset hosts "
-            "referenced %d time(s), saved to %s. There is no widget on this "
-            "page and no key would help. What clears it, measured "
-            "2026-09-16: an exit Montblanc does not score as a datacenter. Note "
-            "this engine cannot use an authenticated remote CDP endpoint or "
-            "an authenticated proxy; see the README's engine limits — which "
-            "is why --mode profile is the one mode that needs a different "
-            "engine here. This is exit 3, distinct from a genuinely empty "
-            "result (exit 4).",
-            len(html or ""), references_own_assets(html or ""), debug_html)
-        outcome.blocked_by = "cloudflare (hard block)" if html else "no-response"
+            "Montblanc did not serve this request — %d bytes, its own asset "
+            "host referenced %d time(s), saved to %s. There is no widget on "
+            "it, so no key would help. Note what this is NOT: an ordinary "
+            "datacenter address is served normally by this site (measured "
+            "2026-09-17 from a Hetzner IP — listings, search and product "
+            "pages all HTTP 200, no proxy, no key), so a refusal here is "
+            "unusual rather than expected. Check the User-Agent first — the "
+            "edge refuses `curl`, `python-requests` and friends outright — "
+            "then try a different exit with --proxy (this engine cannot "
+            "authenticate one; see the README's engine limits). This "
+            "is exit 3, distinct from a genuinely empty result (exit 4).%s",
+            len(html or ""), assets, debug_html,
+            (f" Tried {block_retries + 1} exit(s)." if has_pool
+             else f" Re-fetched {block_retries + 1} time(s)."))
+        outcome.blocked_by = "edge refusal" if html else "no-response"
         outcome.final_url = d["current_url"]()
         return outcome
 
@@ -838,7 +843,7 @@ def scrape(args) -> int:
     # All three modes are one row per product-at-a-location, so `sku` is the
     # key for all of them.
     dedupe_key = "sku"
-    # Only --mode profile is single-page. Both listing modes paginate
+    # Only --mode product is single-page. Both listing modes paginate
     # identically, so neither may be treated as single-page — that is the
     # silent-success failure this family exists to avoid.
     stop_reason = "single_page_mode" if args.mode == "product" else "completed"
@@ -1179,7 +1184,7 @@ def parse_args():
     p.add_argument("--dump-html", default=None, metavar="PATH",
                    help="Save the exact HTML the parser is given, on success as "
                         "well as failure. Useful when the row count is right but "
-                        "a column comes back empty — see TROUBLESHOOTING.md.")
+                        "a column comes back empty — see the README's \"Traps that look like bugs\".")
     p.add_argument("--headless", action="store_true", default=True)
     p.add_argument("--headful", dest="headless", action="store_false")
     args = p.parse_args()

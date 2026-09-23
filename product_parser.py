@@ -253,7 +253,7 @@ PAGE_SIZE = 24
 # recently", which is a perfectly good thing for a shopper and a badly
 # skewed sample for anyone measuring a catalogue.
 #
-# Unlike BBB's accreditation bias this is not a paid placement and there is
+# Unlike the accreditation bias bbb-scraper measured, this is not a paid placement and there is
 # nothing dishonest about it, so the argument for overriding it is weaker —
 # but the CONSEQUENCE is identical: a run under the default is not a sample
 # of the catalogue, and two runs under different orderings are different
