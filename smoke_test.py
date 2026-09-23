@@ -2128,6 +2128,46 @@ def check_x_debug_header_is_redacted():
 
 
 
+def check_scraper_api_payload_and_status():
+    """Measured 2026-09-23 against the live Scraper API: `waitFor` sent as
+    a JSON-encoded string is answered HTTP 422 and still billed, and the
+    response's `status` is the API's own "success" while the target's code
+    is `http_code`. Drive the real fetch_html with requests.post stubbed:
+    no network, no key spent."""
+    import scraper_api_client as sac
+
+    captured = {}
+
+    class _Resp:
+        status_code = 200
+        headers = {}
+        text = ""
+
+        def json(self):
+            return {"status": "success", "http_code": 403,
+                    "headers": {}, "body": "<html></html>"}
+
+    def fake_post(url, **kw):
+        captured.update(kw.get("json") or {})
+        return _Resp()
+
+    real_post, real_argv = sac.requests.post, sys.argv
+    sac.requests.post = fake_post
+    sys.argv = ["scraper_api_client.py", "--key", "k" * 8,
+                "--url", 'https://www.montblanc.com/en-us/writing-instruments',
+                "--wait-text", 'Montblanc']
+    try:
+        _html, status = sac.fetch_html(sac.parse_args())
+    finally:
+        sac.requests.post, sys.argv = real_post, real_argv
+
+    check("scraper API: waitFor is sent as an object, not a JSON string",
+          captured.get("waitFor") == {"text": 'Montblanc'},
+          "got %r" % (captured.get("waitFor"),))
+    check("scraper API: the target status comes from http_code (403), "
+          "not the API's own 'success'", status == 403, "got %r" % (status,))
+
+
 CHECKS = [v for k, v in sorted(globals().items()) if k.startswith("check_")]
 
 
