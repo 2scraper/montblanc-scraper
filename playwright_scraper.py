@@ -299,7 +299,7 @@ def _plan_page_urls(args, page_one_url: str,
     The plan is CAPPED by the site's own `result-count`, printed above the
     grid on page 1. Overshooting is cheap here — `start=288` on a
     280-product category is HTTP 200 with an empty grid, not the HTTP 500 the
-    same overshoot produces on BBB — but planning against the stated count
+    same overshoot produces on bbb-scraper's site — but planning against the stated count
     still saves the wasted fetch and keeps the sidecar honest.
     """
     wanted = page_flow.pages_to_plan(args.pages, pages_avail)
@@ -856,9 +856,7 @@ def _fetch_one_page(session, args, pool, page_num: int, url: str) -> PageOutcome
 
         # Blocked or challenged. A different exit is the one thing that
         # plausibly changes the outcome: the ADDRESS is what was scored, not
-        # the URL, so retrying it unchanged would only confirm it. Measured
-        # 2026-09-09 — the same URL that answers 403 from a datacentre exit
-        # answers 200 from a residential one.
+        # the URL, so retrying it unchanged would only confirm it.
         if block_attempt < block_retries:
             if has_pool:
                 logger.warning("Page %d came back as %s from %s — retrying "
@@ -876,8 +874,7 @@ def _fetch_one_page(session, args, pool, page_num: int, url: str) -> PageOutcome
                 # cookies the retry is meant to build on.
                 pause = args.retry_delay * (block_attempt + 1)
                 logger.warning("Page %d came back as %s — re-fetching through "
-                               "the same access path in %.1fs (%d/%d). On this "
-                               "site that is often what clears it.",
+                               "the same access path in %.1fs (%d/%d).",
                                page_num, state, pause, block_attempt + 1,
                                block_retries)
                 time.sleep(pause)
@@ -1669,7 +1666,7 @@ def parse_args():
     p.add_argument("--dump-html", default=None, metavar="PATH",
                    help="Save the exact HTML the parser is given, on success as "
                         "well as failure. Useful when the row count is right but "
-                        "a column comes back empty — see TROUBLESHOOTING.md.")
+                        "a column comes back empty — see the README's \"Traps that look like bugs\".")
     p.add_argument("--headless", action="store_true", default=True)
     p.add_argument("--headful", dest="headless", action="store_false")
     args = p.parse_args()
