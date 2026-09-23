@@ -40,6 +40,11 @@ When it does, the release notes lead with it.
   sibling now name `bbb-scraper`; one smoke-test docstring said "BBB has not
   been measured" where it meant this site.
 
+- `SECURITY.md` said this project has no releases or version tags; it has
+  both. "Supported versions" now names the latest release and `main`.
+- `captcha_solver.py`'s docstring pointed at a "No DataDome solver" section
+  that does not exist in this repo (it came with the copied core). Removed.
+
 ## [0.1.2] — 2026-09-18
 
 > **Correction to v0.1.0 and v0.1.1.** Both said "no challenge of any kind
