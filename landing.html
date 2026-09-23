@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2scraper — Montblanc Scraper</title>
-<meta name="description" content="Open-source Montblanc (montblanc.com) scraper — three engines, JSON/CSV, Montblanc ratings, accreditation and complaint counts. Search and category modes need no account.">
+<meta name="description" content="Open-source Montblanc (montblanc.com) scraper — three engines, JSON/CSV, category listings, keyword searches and product pages with every variant's own price. No account, key or proxy needed.">
 <style>
   :root{
     --bg:#0F1419;
@@ -104,11 +104,11 @@
   <div class="wrap">
     <h1>Montblanc Scraper</h1>
     <p class="lede">Open-source Montblanc scraper for montblanc.com — three engines,
-      your own infrastructure by default, and 2Captcha's paid products only where they are
-      actually needed.</p>
-    <p class="sub">Business listings and full product profiles: name, address, phone numbers,
-      Montblanc letter grade, accreditation status and date, categories, coordinates, complaint and
-      review counts — into JSON or CSV.</p>
+      your own infrastructure by default, and 2Captcha's paid products only where they
+      actually buy you something.</p>
+    <p class="sub">Category listings, keyword searches and full product pages: name, sku,
+      price, currency, stock, collection, colour, images and every variant of a product with
+      its own price — into JSON or CSV.</p>
     <a class="cta" href="https://github.com/2scraper/montblanc-scraper">View source on GitHub</a>
     <a class="cta secondary" href="https://github.com/2scraper/montblanc-scraper#readme">Read the README</a>
   </div>
@@ -119,28 +119,28 @@
     <h2>What was actually measured</h2>
 
     <div class="callout">
-      <p><strong>The search and category modes need no account, no key and no proxy.</strong></p>
-      <p>Montblanc renders its listings out of its own JSON endpoint, and that endpoint is not behind
-        Cloudflare. Measured on 2026-09-16 from a datacenter VPS — an address that gets
-        <strong>HTTP 403 on every HTML page on the site</strong> — the endpoint answered
-        <strong>HTTP 200 with 15 complete product records</strong>. A two-page run from that
-        machine, with no credentials configured at all, returned 30 rows and
-        <code>status: complete</code>.</p>
+      <p><strong>You do not need an account, a key or a proxy to scrape this site.</strong></p>
+      <p>Measured on 2026-09-17 from a bare datacenter address (Hetzner, Helsinki) with no
+        credentials configured at all: category listings, keyword searches and product pages
+        <strong>all answered HTTP 200</strong>. No reCAPTCHA, hCaptcha, Turnstile, DataDome,
+        PerimeterX, Incapsula, Kasada or AWS WAF markers appeared on any capture, and there is no
+        <code>data-sitekey</code> anywhere on the site.</p>
     </div>
 
     <p>We say that plainly instead of selling around it. What the paid products buy on this site
-      is <strong>one specific thing</strong>: a product <em>profile</em> page, which is
-      Cloudflare-gated and has no endpoint behind it — so accreditation dates, complaint counts
-      and the full rating rationale are reachable only through a rendered page from a residential
-      exit.</p>
+      is <strong>a specific market</strong>: Montblanc serves every market from one host with the
+      locale in the URL path, and it <strong>sets prices per market rather than converting
+      them</strong> — one backpack was EUR 2000 on <code>en-fi</code>, EUR 1900 on
+      <code>de-de</code>, GBP 1700 on <code>en-gb</code> and USD 1990 on <code>en-us</code>. Two
+      of those share a currency and still disagree. They also buy volume from many addresses,
+      and not having to run a browser at all.</p>
 
     <div class="table-scroll">
       <table>
-        <tr><th></th><th>Listings (search, category)</th><th>Profiles</th></tr>
-        <tr><td>Behind Cloudflare</td><td class="yes">no</td><td class="no">yes, HTTP 403</td></tr>
-        <tr><td>Needs a 2Captcha key</td><td class="yes">no</td><td class="yes">no</td></tr>
-        <tr><td>Needs a residential exit</td><td class="yes">no</td><td class="no">yes</td></tr>
-        <tr><td>Measured from a datacenter IP</td><td class="yes">200 — 30 rows, complete</td><td class="no">403</td></tr>
+        <tr><th>Page kind</th><th>From a datacenter IP, no key, no proxy</th></tr>
+        <tr><td>Category listing</td><td class="yes">HTTP 200</td></tr>
+        <tr><td>Keyword search</td><td class="yes">HTTP 200</td></tr>
+        <tr><td>Product page</td><td class="yes">HTTP 200</td></tr>
       </table>
     </div>
   </div>
@@ -152,28 +152,30 @@
     <div class="grid">
       <div class="card">
         <h3>Three engines, one schema</h3>
-        <p>Playwright (primary), Selenium and Puppeteer via pyppeteer — identical rows and exit
-          codes — plus a browserless client for 2Captcha's Scraper API.</p>
+        <p>Playwright (primary, with parallel page fetching), Selenium and Puppeteer via
+          pyppeteer — identical rows and exit codes — plus a browserless client for 2Captcha's
+          Scraping Browser API.</p>
       </div>
       <div class="card">
         <h3>Three modes</h3>
-        <p>A keyword search, a category listing, or a single product profile. A profile row
-          joins a listing row on the same key.</p>
+        <p>A category listing, a keyword search, or a single product page — and that last one
+          emits one row per variant, so a sixteen-nib Meisterst&uuml;ck is sixteen rows.</p>
       </div>
       <div class="card">
-        <h3>No DOM scraping</h3>
-        <p>Reads Montblanc's own embedded state payload — the same object its endpoint returns — so
-          there is no fragile selector anywhere in the primary path.</p>
+        <h3>Structured data first</h3>
+        <p>Reads Montblanc's own <code>ItemList</code> and <code>ProductGroup</code>, enriched
+          from the site's tile attributes, with a URL-pattern fallback — no fragile CSS-class
+          scraping.</p>
       </div>
       <div class="card">
         <h3>JSON, CSV and a sidecar</h3>
-        <p>A documented 53-column schema, plus a <code>.meta.json</code> per run recording status,
-          pages completed and Montblanc's own result arithmetic.</p>
+        <p>One stable row schema, plus a <code>.meta.json</code> per run recording the market,
+          the ordering, the site's own totals and which pages failed by number.</p>
       </div>
       <div class="card">
-        <h3>340 offline checks</h3>
-        <p>Run with no network and no engine library installed, on fixtures cut from real
-          captures.</p>
+        <h3>Honest diffs</h3>
+        <p><code>diff_runs.py</code> refuses a comparison across markets, modes or orderings,
+          because each changes which products are in the file.</p>
       </div>
       <div class="card">
         <h3>A canary with no secrets</h3>
@@ -186,28 +188,23 @@
 
 <section id="traps">
   <div class="wrap">
-    <h2>Three things about Montblanc worth knowing before you start</h2>
+    <h2>Traps it already handles</h2>
 
-    <h3>1. &ldquo;Best Match&rdquo; is not a relevance ordering</h3>
-    <p>Montblanc's own default sort returned <strong>15 of 15 Montblanc Accredited products</strong> on
-      every page tested and, for a search on <code>restaurants</code>, not one restaurant. The
-      same query sorted A&ndash;Z returned <strong>0 of 15 accredited</strong> and real
-      name-matched restaurants. This scraper defaults to A&ndash;Z and records the ordering as a
-      column, because it changes <em>which</em> products end up in your file rather than just
-      their order.</p>
+    <h3>1. A product page publishes <code>ProductGroup</code>, not <code>ItemList</code></h3>
+    <p>Point a listing parser at one and it silently returns the &ldquo;you may also
+      like&rdquo; carousel as the page's products.</p>
 
-    <h3>2. A complete run can still be a small sample</h3>
-    <p>Montblanc caps every query at 15 pages of 15 &mdash; 225 rows &mdash; however many it matched.
-      One measured search reported <strong>19,016 results</strong>. The run is genuinely
-      complete; the sidecar records both numbers so you can tell &ldquo;complete&rdquo; from
-      &ldquo;exhaustive&rdquo;.</p>
-    <pre>{"status": "complete", "total_results": 19016, "pages_available": 15,
- "capped_by_site": true, "reachable_max": 225}</pre>
+    <h3>2. Stock cannot be read from the structured data</h3>
+    <p><code>availability</code> said InStock on 192 of 192 rows measured, while the tiles said
+      sold-out on 7 of 384. The tile is what this scraper reads.</p>
 
-    <h3>3. An unrated product is not rated zero</h3>
-    <p>Montblanc returns an empty grade with a score of <code>0.0</code> for a product it has not
-      graded. Written through, that zero quietly drags every average you compute, so both columns
-      come back null instead.</p>
+    <h3>3. &ldquo;From &euro;515&rdquo; is a minimum, not a price</h3>
+    <p>A variant group's price range is recorded as a minimum and labelled
+      <code>price_source: "dom_range"</code>.</p>
+
+    <h3>4. The edge refuses HTTP client libraries by killing the connection</h3>
+    <p><code>requests</code> reports that as a read timeout, which looks exactly like a slow
+      network and is not one.</p>
   </div>
 </section>
 
@@ -219,7 +216,9 @@ cd montblanc-scraper
 pip install -r requirements.txt -r requirements-playwright.txt
 playwright install chromium
 
-python playwright_scraper.py --text restaurants --location "New York, NY" --pages 3</pre>
+python playwright_scraper.py \
+    --url "https://www.montblanc.com/en-us/writing-instruments" \
+    --pages 3 --format both</pre>
     <p class="muted">No key, no proxy, no account. Output lands in
       <code>montblanc_products.json</code>, <code>montblanc_products.csv</code> and a
       <code>.meta.json</code> sidecar.</p>
@@ -228,46 +227,17 @@ python playwright_scraper.py --text restaurants --location "New York, NY" --page
 
 <section id="products">
   <div class="wrap">
-    <h2>2Captcha products, when you want them</h2>
-    <div class="table-scroll">
-      <table>
-        <tr><th>Product</th><th>What it is for on this site</th></tr>
-        <tr><td>Residential proxies</td>
-            <td>The thing that makes profile mode work. Montblanc refuses a datacenter address
-              outright &mdash; measured identical on six consecutive attempts over 30 seconds,
-              headless and headful alike.</td></tr>
-        <tr><td>Scraping Browser API</td>
-            <td>A remote browser you do not run or patch, with a chosen exit country. Every live
-              profile measurement in the README was taken through it.</td></tr>
-        <tr><td>Captcha solving</td>
-            <td>For Montblanc's Managed Challenge only. The site refuses in two shapes and only one is
-              a solvable test &mdash; the scraper tells them apart and never spends on the
-              other.</td></tr>
-        <tr><td>Fingerprints</td>
-            <td>A consistent device identity for a local browser.</td></tr>
-      </table>
-    </div>
-    <p style="margin-top:18px;">One key, four separately-billed products:
-      <a href="https://2captcha.com">2captcha.com</a></p>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <h2>What it deliberately does not do</h2>
-    <div class="callout warn">
-      <p>Montblanc lists a product's officers by name. There is <strong>no column for them</strong>,
-        and the committed test fixtures carry placeholders instead: republishing a named person's
-        details is a separate act from the site showing them on its own page.</p>
-    </div>
-    <p>It reads public pages only, never submits Montblanc's review or complaint forms, and defaults to
-      a 2-second delay between pages.</p>
+    <h2>Built on 2Captcha</h2>
+    <p>Captcha solving, the Scraping Browser API, proxies and fingerprints — four
+      separately-billed products behind one key. On this site they are optional, and the README
+      says so in the first section rather than the last.</p>
+    <p style="margin-top:18px;"><a href="https://2captcha.com">2captcha.com</a></p>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <p>MIT licensed. Not affiliated with or endorsed by the Montblanc.
+    <p>MIT licensed. Not affiliated with or endorsed by Montblanc.
       Rate limits, terms of service and the legality of scraping in your jurisdiction are your
       responsibility as the operator.</p>
     <p><a href="https://github.com/2scraper/montblanc-scraper">github.com/2scraper/montblanc-scraper</a>
