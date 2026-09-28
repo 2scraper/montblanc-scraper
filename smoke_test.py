@@ -1852,7 +1852,7 @@ def check_every_engine_exposes_the_same_public_surface():
 
 def check_engines_do_not_evaluate_a_string_in_the_browser():
     """§18: a site whose CSP omits `unsafe-eval` kills wait_for_function with
-    an EvalError and takes the run down with exit 1. BBB has not been
+    an EvalError and takes the run down with exit 1. Montblanc has not been
     measured for that, and the cheap habit costs nothing where it would have
     been allowed."""
     for module in ENGINES:
@@ -1989,8 +1989,8 @@ def check_captcha_capability_claims_match_the_code():
         enterprise reCAPTCHA and Cloudflare Turnstile and has for years, so
         such a sentence tells a reader not to buy something that works.
       * saying this repo DOES solve something it builds no task type for --
-        which is what the README said here: it billed the Managed Challenge
-        solve to `--twocaptcha-key`, while the only thing that clears one is
+        which is what the sibling bbb-scraper's README once said: it billed
+        its site's Managed Challenge solve to `--twocaptcha-key`, while the only thing that clears one is
         `Captcha.setAutoSolve` over `--cdp-endpoint`.
 
     Neither is visible to any other check: nothing fails, nothing crashes,

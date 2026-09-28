@@ -709,9 +709,9 @@ def _fetch_one_page(session, args, pool, page_num: int, url: str) -> PageOutcome
             state = page_flow.classify(html, None, page.url)
 
         # The paid path is reached only for state "captcha" — a rendered
-        # Managed Challenge, which IS a test. It is NOT reached for
-        # "blocked": that page carries no widget, so a solve there would be a
-        # charge for nothing. Mirrors the other two engines.
+        # widget, which IS a test. It is NOT reached for "blocked": an edge
+        # refusal carries no widget, so a solve there would be a charge for
+        # nothing. Mirrors the other two engines.
         #
         # The paid path is reached only for state "challenge", which no
         # capture of this site has ever produced. Wired up because a bot
@@ -759,19 +759,28 @@ def _fetch_one_page(session, args, pool, page_num: int, url: str) -> PageOutcome
     outcome.state = state
 
     if state == "blocked":
-        # Montblanc refuses in TWO shapes and only one is solvable — see
-        # playwright_scraper's twin of this block. This is the HARD refusal.
+        # Mirrors playwright_scraper's twin of this block: an edge refusal
+        # offers no widget and no sitekey, so what a reader needs is which
+        # refusal arrived and what to try, not a captcha hint.
         debug_html = f"{args.out}_page{page_num}_debug.html"
         with open(debug_html, "w", encoding="utf-8") as f:
             f.write(html or "")
+        assets = references_own_assets(html or "")
         logger.error(
-            "Montblanc did not serve this request — %d bytes, its own asset hosts "
-            "referenced %d time(s), saved to %s. There is no widget on this "
-            "page and no key would help. What clears it, measured "
-            "2026-09-16: an exit Montblanc does not score as a datacenter. This is "
-            "exit 3, distinct from a genuinely empty result (exit 4).",
-            len(html or ""), references_own_assets(html or ""), debug_html)
-        outcome.blocked_by = "cloudflare (hard block)" if html else "no-response"
+            "Montblanc did not serve this request — %d bytes, its own asset "
+            "host referenced %d time(s), saved to %s. There is no widget on "
+            "it, so no key would help. Note what this is NOT: an ordinary "
+            "datacenter address is served normally by this site (measured "
+            "2026-09-17 from a Hetzner IP — listings, search and product "
+            "pages all HTTP 200, no proxy, no key), so a refusal here is "
+            "unusual rather than expected. Check the User-Agent first — the "
+            "edge refuses `curl`, `python-requests` and friends outright — "
+            "then try a different exit with --proxy or --cdp-endpoint. This "
+            "is exit 3, distinct from a genuinely empty result (exit 4).%s",
+            len(html or ""), assets, debug_html,
+            (f" Tried {block_retries + 1} exit(s)." if has_pool
+             else f" Re-fetched {block_retries + 1} time(s)."))
+        outcome.blocked_by = "edge refusal" if html else "no-response"
         outcome.final_url = page.url
         return outcome
 
@@ -1272,7 +1281,7 @@ def parse_args():
     p.add_argument("--dump-html", default=None, metavar="PATH",
                    help="Save the exact HTML the parser is given, on success as "
                         "well as failure. Useful when the row count is right but "
-                        "a column comes back empty — see TROUBLESHOOTING.md.")
+                        "a column comes back empty — see the README's \"Traps that look like bugs\".")
     p.add_argument("--chromium-path", default=None, metavar="PATH",
                    help="Use this Chromium/Chrome binary instead of the one "
                         "pyppeteer downloads on first run. Useful on a "
