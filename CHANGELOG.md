@@ -58,6 +58,47 @@ When it does, the release notes lead with it.
 - `captcha_solver.py`'s docstring pointed at a "No DataDome solver" section
   that does not exist in this repo (it came with the copied core). Removed.
 
+## [0.1.4] — 2026-10-07
+
+> **v0.1.3's captcha-budget fix was incomplete in two of the three engines.**
+> It reached Playwright and only ONE of the two call sites in pyppeteer and
+> Selenium, so one page could still buy two solves there against a limit of
+> one. If you are on v0.1.3 and use `--solve-captcha` with those engines,
+> take this one.
+
+### Fixed
+
+- **The pre-classification `handle_captcha_if_present` call is now budgeted
+  in pyppeteer and Selenium too.** The patch that rewrote the call sites
+  matched on surrounding text that differs between engines, so it landed in
+  one of three.
+
+### How it got out, which is the part worth reading
+
+v0.1.3 passed locally with 463 green checks and went **red in CI**. The
+check that catches this was gated behind `_import_engine`, and the venv
+those checks ran in has neither pyppeteer nor Selenium installed — so for
+exactly the two engines that were broken, it SKIPPED. `engine-smoke`, which
+installs each driver in its own venv, failed on both.
+
+The check reads source text off disk and never needed the import at all. It
+now runs unconditionally, with two further source assertions (a budget
+exists; no bare counter survives beside it), and the planted gap is red
+locally. Controlled by re-creating the exact state CI failed on.
+
+That is §22 twice over in one release: *when a check resolves something
+before testing it, ask what it does when the resolution fails.* This one
+stayed silent about the single loudest thing it could have said — and the
+release was announced before CI had confirmed it, which is what let a red
+commit carry a tag.
+
+### Note on the previous section
+
+The `[0.1.3]` entry below is left exactly as the tag published it. A
+released section is history that anyone can check with
+`git show v0.1.3:CHANGELOG.md`, so the correction belongs here rather than
+edited into it (§19).
+
 ## [0.1.3] — 2026-10-07
 
 > **`--mode product` was broken for most of the catalogue in v0.1.0-v0.1.2.**
@@ -128,24 +169,6 @@ while leaving the message in place kept the suite GREEN. It now invokes the
 parser and asserts the exit. That is §22's rule — a control is only as good
 as the edit it actually made — catching a check that tested a sentence
 rather than a behaviour.
-
-### A note on how the budget fix was verified
-
-The first push of this release went RED in CI, and the way it did is the
-useful part. The budget fix reached the Playwright engine and **one of the
-two call sites in pyppeteer and Selenium** — the patch that rewrote them
-matched on surrounding text that differs between the engines.
-
-It passed locally with 463 green checks because the check that would have
-caught it was gated behind `_import_engine`, and this machine's main venv
-has neither pyppeteer nor Selenium — so for those two engines it skipped.
-`engine-smoke`, which installs each driver in its own venv, failed on both.
-
-The check reads text off disk, so it never needed the import at all. It now
-runs unconditionally, and the planted gap goes red locally. §22: when a
-check resolves something before testing it, ask what it does when the
-resolution fails — here it stayed silent about the single loudest thing it
-could have said.
 
 ### Not changed, with reasons
 
@@ -418,6 +441,7 @@ which caught two checks that were passing for the wrong reason, one because
 its fixture carried no carousel and one because its "escaped" fixture
 contained a marker verbatim.
 
+[0.1.4]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.4
 [0.1.3]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.3
 [0.1.2]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.2
 [0.1.1]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.1
