@@ -698,7 +698,10 @@ def _fetch_one_page(session, args, pool, page_num: int, url: str) -> PageOutcome
             break
 
 
-        if handle_captcha_if_present(session, args):
+        # Routed through the budget like every other purchase. This call used
+        # to be unguarded, which is how one page bought three solves against
+        # a limit of one.
+        if budget.spend(lambda: handle_captcha_if_present(session, args)):
             time.sleep(1)
 
         html = _snapshot(session, url) or ""

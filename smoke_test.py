@@ -489,6 +489,31 @@ def check_one_solve_budget_covers_every_purchase():
     `SOLVES_PER_PAGE = 1`**.
     """
     import page_flow
+
+    # THE SOURCE CHECK RUNS WHETHER OR NOT THE DRIVER IS INSTALLED.
+    #
+    # It reads text off disk, so needing an import was never justified — and
+    # it cost a red CI: gated behind `_import_engine`, it skipped for
+    # pyppeteer and selenium in a venv that has neither, so a fix that
+    # reached only the Playwright engine passed locally with 463 green
+    # checks and failed in `engine-smoke`, which installs each driver. The
+    # loudest thing the check could say was the one case it stayed silent
+    # about (§22).
+    for module in ENGINES:
+        path = os.path.join(HERE, module + ".py")
+        if not os.path.exists(path):
+            continue
+        source = open(path, encoding="utf-8").read()
+        budgeted = source.count("budget.spend(lambda: handle_captcha_if_present")
+        total = source.count("handle_captcha_if_present(") - 1   # -1 for the def
+        equal("%s: every handle_captcha_if_present call is budgeted" % module,
+              budgeted, total)
+        check("%s: the engine has a budget to spend from" % module,
+              "_SolveBudget(page_flow.SOLVES_PER_PAGE)" in source)
+        check("%s: no bare counter survives beside it" % module,
+              "solves_bought" not in source)
+
+    # The BEHAVIOURAL half does need the module, so it stays guarded.
     for module in ENGINES:
         engine = _import_engine(module)
         if engine is None:
@@ -510,11 +535,7 @@ def check_one_solve_budget_covers_every_purchase():
         equal("%s: and the budget agrees with what was spent" % module,
               budget.spent, calls["n"])
 
-        # BOTH call sites must go through it — the bug was one that did not.
-        source = open(os.path.join(HERE, module + ".py"), encoding="utf-8").read()
-        equal("%s: every handle_captcha_if_present call is budgeted" % module,
-              source.count("budget.spend(lambda: handle_captcha_if_present"),
-              source.count("handle_captcha_if_present(") - 1)  # -1 for the def
+
 
 
 def check_retries_must_mean_at_least_one_attempt():

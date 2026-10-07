@@ -129,6 +129,24 @@ parser and asserts the exit. That is §22's rule — a control is only as good
 as the edit it actually made — catching a check that tested a sentence
 rather than a behaviour.
 
+### A note on how the budget fix was verified
+
+The first push of this release went RED in CI, and the way it did is the
+useful part. The budget fix reached the Playwright engine and **one of the
+two call sites in pyppeteer and Selenium** — the patch that rewrote them
+matched on surrounding text that differs between the engines.
+
+It passed locally with 463 green checks because the check that would have
+caught it was gated behind `_import_engine`, and this machine's main venv
+has neither pyppeteer nor Selenium — so for those two engines it skipped.
+`engine-smoke`, which installs each driver in its own venv, failed on both.
+
+The check reads text off disk, so it never needed the import at all. It now
+runs unconditionally, and the planted gap goes red locally. §22: when a
+check resolves something before testing it, ask what it does when the
+resolution fails — here it stayed silent about the single loudest thing it
+could have said.
+
 ### Not changed, with reasons
 
 - **One shared fetch loop across the three engines** (§26). A fair
