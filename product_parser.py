@@ -1181,12 +1181,42 @@ def _item_list_products(blocks: Sequence[dict]) -> List[dict]:
 def _product_group(blocks: Sequence[dict]) -> Optional[dict]:
     """The `ProductGroup` node of a detail page, or None.
 
-    A detail page publishes ProductGroup and a listing publishes ItemList, so
-    this returning None on a listing is correct and is what keeps the two
-    entry points from quietly parsing each other's pages.
+    A detail page publishes ProductGroup OR a plain Product (see
+    `_detail_node`), and a listing publishes ItemList — so this returning
+    None on a listing is correct and is what keeps the two entry points from
+    quietly parsing each other's pages.
     """
     for node in blocks:
         if isinstance(node, dict) and node.get("@type") == "ProductGroup":
+            return node
+    return None
+
+
+def _standalone_product(blocks: Sequence[dict]) -> Optional[dict]:
+    """The top-level `Product` node of a detail page, or None.
+
+    A product with NO variants publishes a plain `Product`, not a
+    `ProductGroup`, and this is the COMMON shape rather than the exception.
+    Measured 2026-10-07 over 14 product URLs taken from a live
+    `writing-instruments` listing: **14 of 14** were plain `Product`.
+
+    This function exists because the first version of the parser handled only
+    `ProductGroup` and returned ZERO ROWS for every one of those 14 — while
+    the repo's own canary stayed green, because the URL it pins
+    (a 16-variant Meisterstück) happens to be the minority shape. A fixture
+    that picks the lucky case is a guard that cannot fail (§21).
+
+    §20's lesson was "a DETAIL page may publish a different type than the
+    listing". The correction this cost: a detail page may publish **two
+    different types depending on the product**, so counting the blocks on one
+    captured page answers for that page and not for the route.
+
+    Deliberately NOT reached from a listing: an ItemList's products are
+    nested inside `itemListElement`, never top-level, so this cannot pick one
+    up and turn a listing into a single row.
+    """
+    for node in blocks:
+        if isinstance(node, dict) and node.get("@type") == "Product":
             return node
     return None
 
@@ -1710,9 +1740,29 @@ def parse_product_detail(html: str, base_url: str = "", *,
         return []
 
     soup = BeautifulSoup(html, "html.parser")
-    group = _product_group(ld_blocks(soup))
+    blocks = ld_blocks(soup)
+    group = _product_group(blocks)
+
     if group is None:
-        return []
+        # A product with no variants publishes a plain `Product`. That is the
+        # COMMON shape on this site — 14 of 14 sampled live product URLs —
+        # and handling only ProductGroup returned nothing for all of them.
+        # One row, built by the same builder the variants use, so the two
+        # shapes cannot drift apart in what they populate.
+        single = _standalone_product(blocks)
+        if single is None:
+            return []
+        return [_detail_row(
+            single, _ld_offer(single), base_url=base_url,
+            locale=locale_from_url(base_url) if base_url else None,
+            locale_cur=page_currency(html), brand=_brand_name(single),
+            image=_ld_image(single.get("image")),
+            category=_breadcrumb_category(blocks) or category_from_url(base_url),
+            # No group above it, so no `variant_of`: this product IS the
+            # thing, not one configuration of something larger. Writing its
+            # own sku there would invent a group that does not exist.
+            variant_of=None, position=1, mode=mode, sort=sort,
+            fallback_sku=sku_from_url(base_url))]
 
     locale = locale_from_url(base_url) if base_url else None
     locale_cur = page_currency(html)
@@ -1720,7 +1770,7 @@ def parse_product_detail(html: str, base_url: str = "", *,
     group_offer = _ld_offer(group)
     group_brand = _brand_name(group)
     group_image = _ld_image(group.get("image"))
-    category = _breadcrumb_category(ld_blocks(soup)) or category_from_url(base_url)
+    category = _breadcrumb_category(blocks) or category_from_url(base_url)
 
     variants = [v for v in (group.get("hasVariant") or []) if isinstance(v, dict)]
     rows: List[Product] = []

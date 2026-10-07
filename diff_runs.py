@@ -45,6 +45,9 @@ page would otherwise report every row as changed.
 
 import argparse
 import json
+import os
+from urllib.parse import (parse_qsl, urlencode, urlparse,
+                          urlunparse)
 import pathlib
 import re
 import sys
@@ -236,7 +239,24 @@ def _check_comparable(args) -> bool:
     for label, path in (("--old", args.old), ("--new", args.new)):
         status, meta = _run_status(path)
         if status is None:
-            continue  # no sidecar: nothing to check, see _run_status
+            # NO SIDECAR IS ITSELF A REFUSAL, not a reason to skip the check.
+            #
+            # `continue` here meant the completeness guard — the one this
+            # function exists for — was silently skipped for exactly the
+            # files that cannot prove they are complete. Two sidecar-less
+            # runs diffed clean with exit 0, so a partial run whose sidecar
+            # had been moved, or rows assembled by hand, read as two full
+            # snapshots of the catalogue.
+            #
+            # A failed run deliberately writes NO sidecar (§8), so "no
+            # sidecar" is a state this repo produces on purpose and the one
+            # it must not treat as "probably fine".
+            problems.append(
+                f"{label} ({path}) has no {os.path.splitext(path)[0]}.meta.json "
+                f"beside it, so nothing says whether that run was complete, "
+                f"which mode produced it, or how much of the catalogue it "
+                f"holds. A failed run writes no sidecar on purpose.")
+            continue
         mode = (meta or {}).get("mode")
         if mode:
             modes[label] = mode
@@ -299,6 +319,38 @@ def _check_comparable(args) -> bool:
             f"under price-ascending shared 0 of 24 products. Every "
             f"`added`/`removed` line would describe the sort rather than the "
             f"catalogue.")
+
+    # A SELECTION MISMATCH — the fourth axis, and the one this tool missed.
+    #
+    # `mode`, `sort` and `locale` were each guarded because each decides
+    # WHICH products end up in the file. So does the selection itself, and
+    # nothing checked it: diffing a `writing-instruments` run against a
+    # `bags` run of the same market and ordering reported "3 added, 3
+    # removed" with exit 0, every line an artefact of comparing two
+    # different categories.
+    #
+    # Compared on the sidecar's `start_url` with the paging parameters
+    # stripped, because those legitimately differ between two runs of the
+    # same listing (`?start=0` against `?start=24`) while the listing is the
+    # same thing. A missing `start_url` is not treated as a mismatch — the
+    # no-sidecar case is already refused above, and an older sidecar that
+    # predates the field should not be reported as a different category.
+    selections = {}
+    for label, path in (("--old", args.old), ("--new", args.new)):
+        _, meta = _run_status(path)
+        url = (meta or {}).get("start_url")
+        if not url:
+            continue
+        parts = urlparse(url)
+        query = [(k, v) for k, v in parse_qsl(parts.query)
+                 if k not in ("start", "sz", "page", "srule")]
+        selections[label] = urlunparse(parts._replace(
+            query=urlencode(sorted(query)), fragment=""))
+    if len(set(selections.values())) > 1:
+        problems.append(
+            f"the two runs read different listings ({selections}). Every "
+            f"product would be reported as added or removed, and not one of "
+            f"those lines would be about the catalogue changing.")
 
     # A LOCALE MISMATCH, which is this site's most expensive false alarm.
     #

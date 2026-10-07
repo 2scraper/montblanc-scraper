@@ -244,9 +244,17 @@ jobs:
           playwright install --with-deps chromium
 
       # A product page is a different page kind with a different structured
-      # type (`ProductGroup`, not `ItemList`), so the listing canary passing
-      # says nothing about it. It needs no credentials either.
-      - name: Run
+      # type, so the listing canary passing says nothing about it. It needs
+      # no credentials either.
+      #
+      # TWO products, and the second one is the point. Montblanc publishes
+      # `ProductGroup` for a product WITH variants and a plain `Product` for
+      # one without — and the plain shape is the common one (14 of 14 URLs
+      # sampled from a live listing on 2026-10-07). This job used to pin only
+      # the 16-variant Meisterstück, so it stayed green for three weeks while
+      # `--mode product` returned ZERO rows for most of the catalogue. A
+      # fixture that picks the lucky case is a guard that cannot fail.
+      - name: Run (a variant group)
         id: run
         run: |
           set +e
@@ -254,6 +262,45 @@ jobs:
             --url "https://www.montblanc.com/en-us/meisterstuck-gold-coated-legrand-fountain-pen-MB132460.html" \
             --format json --out canary_product
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Run (a product with NO variants — the common shape)
+        id: run_single
+        run: |
+          set +e
+          python playwright_scraper.py --mode product \
+            --url "https://www.montblanc.com/en-us/piston-converter-starwalker-MB128502.html" \
+            --format json --out canary_single
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: The no-variant product parsed
+        env:
+          EXIT_CODE: ${{ steps.run_single.outputs.exit_code }}
+        run: |
+          python - <<'PY'
+          import json, os, sys
+          code = int(os.environ["EXIT_CODE"])
+          if code != 0:
+              print(f"::error::A product with no variants exited {code}. This "
+                    f"is the COMMON shape on this site — a plain JSON-LD "
+                    f"`Product` rather than a `ProductGroup` — so exit 5 here "
+                    f"means --mode product is broken for most of the "
+                    f"catalogue, not for one page.")
+              sys.exit(1)
+          rows = json.load(open("canary_single.json"))
+          if len(rows) != 1:
+              print(f"::error::expected exactly 1 row, got {len(rows)}")
+              sys.exit(1)
+          row = rows[0]
+          for field in ("sku", "price", "currency", "title"):
+              if not row.get(field):
+                  print(f"::error::the single-product row has no {field}")
+                  sys.exit(1)
+          if row.get("variant_of"):
+              print("::error::a product with no variants must not claim a "
+                    "variant_of — there is no group above it")
+              sys.exit(1)
+          print(f"single product OK: {row['sku']} {row['price']} {row['currency']}")
+          PY
 
       - name: Check what came back
         run: |
@@ -310,6 +357,8 @@ jobs:
           path: |
             canary_product.json
             canary_product.meta.json
+            canary_single.json
+            canary_single.meta.json
           if-no-files-found: ignore
 
   scraping-browser:

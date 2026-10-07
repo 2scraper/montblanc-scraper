@@ -174,7 +174,24 @@ class PageOutcome:
 
     @property
     def ok(self) -> bool:
-        return not self.load_failed and self.blocked_by is None
+        """Whether this page produced a trustworthy answer.
+
+        `parse_failed` counts as NOT ok, and that is a fix rather than a
+        tightening. The state was being set on every page and consulted on
+        PAGE 1 ONLY, so the identical fault reported:
+
+            page 1   stop_reason 'parser_found_nothing'  -> not complete
+            page 2+  0 rows -> no fresh skus -> 'no_new_products' -> COMPLETE
+
+        — a run that logged "failure in THIS parser" and then exited 0 saying
+        the catalogue had ended. Putting it here means the sequential loop,
+        the concurrent workers and the page-1 branch all see it through the
+        one predicate they already share, instead of three places having to
+        remember it separately.
+        """
+        return (not self.load_failed
+                and self.blocked_by is None
+                and self.state != "parse_failed")
 
 
 ITEM_LINK_SELECTOR = page_flow.READY_SELECTOR_LISTING
@@ -741,7 +758,7 @@ def _fetch_one_page(session, args, pool, page_num: int, url: str) -> PageOutcome
     # Counted across the whole block-retry loop, not per attempt: a page that
     # keeps coming back as a challenge would otherwise buy one solve per
     # rotation, which is how a run quietly turns into a bill.
-    solves_bought = 0
+    budget = _SolveBudget(page_flow.SOLVES_PER_PAGE)
     html, state, load_failed = None, "ok", False
 
     for block_attempt in range(block_retries + 1):
@@ -783,7 +800,10 @@ def _fetch_one_page(session, args, pool, page_num: int, url: str) -> PageOutcome
         if load_failed:
             break
 
-        if handle_captcha_if_present(session.page, args):
+        # Routed through the budget like every other purchase. This
+        # call used to be unguarded, which is how one page bought three
+        # solves against a limit of one.
+        if budget.spend(lambda: handle_captcha_if_present(session.page, args)):
             # A solve navigated the page. Give the destination a moment
             # before judging what came back.
             session.page.wait_for_timeout(1000)
@@ -827,10 +847,8 @@ def _fetch_one_page(session, args, pool, page_num: int, url: str) -> PageOutcome
         # nothing. That distinction is the whole reason page_flow separates
         # the two states, and it is bounded by SOLVES_PER_PAGE so a rotation
         # loop cannot become a bill.
-        if (page_flow.should_solve(state)
-                and solves_bought < page_flow.SOLVES_PER_PAGE):
-            solves_bought += 1
-            if handle_captcha_if_present(session.page, args):
+        if page_flow.should_solve(state):
+            if budget.spend(lambda: handle_captcha_if_present(session.page, args)):
                 session.page.wait_for_timeout(1000)
                 html = _snapshot(session.page, url) or html
                 state = _classify(session.page, html)
@@ -1182,6 +1200,60 @@ def _fetch_pages_concurrently(args, pool, specs, concurrency: int):
     return results, sorted(unattempted), exhausted.is_set()
 
 
+class _SolveBudget:
+    """Every paid solve on one page goes through here. One counter, checked
+    BEFORE each purchase rather than beside one of them.
+
+    This exists because the budget was previously enforced at ONE of the two
+    call sites. `handle_captcha_if_present` runs twice per attempt — once
+    before the page is classified, so a challenge is cleared before anything
+    is judged, and once after, for the state that says the page really is
+    gated — and only the second call was counted. Reproduced with the solver
+    stubbed: **3 solver invocations against `SOLVES_PER_PAGE = 1`**, because
+    the uncounted call repeats on every block-retry.
+
+    Nothing about that is visible where a challenge is rare, which is why it
+    survived: the counter looked enforced and the constant read like a limit.
+    It is CLAUDE.md §17's "a policy constant nothing reads", with a bill
+    attached.
+
+    The budget deliberately does NOT reset on rotation: a fresh exit is a
+    reason to re-fetch, not a fresh allowance to spend.
+    """
+
+    def __init__(self, limit: int):
+        self.limit = limit
+        self.spent = 0
+
+    def spend(self, solve) -> bool:
+        """Run `solve()` if the budget allows, and count it. False if not."""
+        if self.spent >= self.limit:
+            logger.info("Not attempting another solve on this page: %d of %d "
+                        "already bought. A challenge that survives a solved "
+                        "token is not one this run can pass, and a second "
+                        "solve is a second charge for the same answer.",
+                        self.spent, self.limit)
+            return False
+        self.spent += 1
+        return bool(solve())
+
+
+def _failure_reason(outcome) -> str:
+    """One name for why a page failed, used by every path in this engine.
+
+    Three places decide a run's `stop_reason` from a failed page — the page-1
+    branch, the sequential loop and the concurrent workers — and each one
+    used to spell this inline. The parse-failure state reached only the first
+    of the three, so the same fault was `parser_found_nothing` on page 1 and
+    a COMPLETE run on page 2. One function, three callers, no third spelling.
+    """
+    if outcome.state == "parse_failed":
+        return "parser_found_nothing"
+    if outcome.load_failed:
+        return "page_load_timeout"
+    return f"blocked_{outcome.blocked_by}"
+
+
 def scrape(args) -> int:
     # One entry per page attempted, merged after the loop rather than folded
     # into shared state during it — see PageOutcome for why that ordering
@@ -1270,13 +1342,8 @@ def scrape(args) -> int:
             outcomes.append(first)
 
             if not first.ok:
-                stop_reason = ("page_load_timeout" if first.load_failed
-                               else f"blocked_{first.blocked_by}")
+                stop_reason = _failure_reason(first)
                 blocked = first.blocked_by is not None
-            elif first.state == "parse_failed":
-                # Served, linked to products, parsed to nothing: OUR bug, and
-                # it must not reach the sidecar as a complete run (§20).
-                stop_reason = "parser_found_nothing"
             elif args.mode == "product":
                 pass  # one page is the whole run — but many rows
             else:
@@ -1312,8 +1379,7 @@ def scrape(args) -> int:
                     failed = [o for o in rest if not o.ok]
                     if failed:
                         worst = min(failed, key=lambda o: o.page_num)
-                        stop_reason = ("page_load_timeout" if worst.load_failed
-                                       else f"blocked_{worst.blocked_by}")
+                        stop_reason = _failure_reason(worst)
                         blocked = any(o.blocked_by for o in rest)
                     elif exhausted:
                         stop_reason = "no_new_products"
@@ -1335,8 +1401,7 @@ def scrape(args) -> int:
                         outcome = _fetch_one_page(session, args, pool, page_num, url)
                         outcomes.append(outcome)
                         if not outcome.ok:
-                            stop_reason = ("page_load_timeout" if outcome.load_failed
-                                           else f"blocked_{outcome.blocked_by}")
+                            stop_reason = _failure_reason(outcome)
                             blocked = outcome.blocked_by is not None
                             break
 
@@ -1760,6 +1825,19 @@ def parse_args():
                        "variant table has no ordering to ask for.")
     if args.page_size < 1:
         p.error("--page-size must be at least 1")
+    if args.retries < 1:
+        # `range(1, args.retries + 1)` is empty for 0 and for negatives, so
+        # the navigation loop never runs: the engine reports the page as
+        # BLOCKED, 39 bytes, and prints advice about the site refusing us —
+        # for a request it never sent. Presenting a non-request as a site
+        # refusal is exactly the "never present a guess as a fact" rule, so
+        # this is refused at the CLI rather than fixed up silently.
+        p.error("--retries must be at least 1 (it counts ATTEMPTS, not extra "
+                "retries, so 1 means 'try once and do not retry'). %d would "
+                "skip the navigation entirely and then report the page as "
+                "blocked." % args.retries)
+    if args.pages < 1:
+        p.error("--pages must be at least 1")
     return args
 
 

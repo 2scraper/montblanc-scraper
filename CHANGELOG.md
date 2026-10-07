@@ -58,6 +58,95 @@ When it does, the release notes lead with it.
 - `captcha_solver.py`'s docstring pointed at a "No DataDome solver" section
   that does not exist in this repo (it came with the copied core). Removed.
 
+## [0.1.3] — 2026-10-07
+
+> **`--mode product` was broken for most of the catalogue in v0.1.0-v0.1.2.**
+> A product with no variants publishes a plain JSON-LD `Product`, and the
+> parser handled only `ProductGroup`, so those pages returned ZERO rows.
+> Measured over 14 product URLs taken from a live listing on 2026-10-07:
+> **14 of 14** were the plain shape and all 14 parsed to nothing. The two
+> listing modes were unaffected.
+
+Five defects, all from a third-party audit, all reproduced here before being
+fixed and all controlled afterwards.
+
+### Fixed
+
+- **A product with no variants now parses** (was: 0 rows). `ProductGroup`
+  and plain `Product` go through the same row builder, so the two shapes
+  cannot drift in what they populate. §20 taught "a detail page may publish
+  a different type than the listing"; the correction is that a detail page
+  publishes a different type **depending on the product**, so counting the
+  blocks on one captured page answers for that page and not for the route.
+
+  It stayed hidden because both captured product pages happened to be
+  variant groups AND the canary pinned a 16-variant Meisterstück — a fixture
+  that picks the lucky case is a guard that cannot fail (§21). The canary
+  now runs both shapes.
+
+- **A parse failure after page 1 reported a COMPLETE run.** The state was
+  set on every page and consulted on page 1 only, so the identical fault
+  came out as `parser_found_nothing` on page 1 and as `no_new_products` —
+  which IS a complete stop reason — on page 2. A run logged "failure in THIS
+  parser" and then exited 0 saying the catalogue had ended. `parse_failed`
+  now makes a page not-`ok`, which is the one predicate the page-1 branch,
+  the sequential loop and the concurrent workers already share, and all
+  three route their reason through one `_failure_reason` helper. A mid-run
+  parse failure now keeps its rows and reports `partial`, exit 6.
+
+- **One page could buy three captcha solves against a budget of one.**
+  `handle_captcha_if_present` runs twice per attempt and only the second
+  call was counted, so the uncounted one repeated on every block-retry.
+  Reproduced with the solver stubbed: **3 invocations, `SOLVES_PER_PAGE =
+  1`**. Both call sites now spend from one `_SolveBudget`, checked BEFORE
+  each purchase, and it does not reset on rotation — a fresh exit is a
+  reason to re-fetch, not a fresh allowance. This is §17's "a policy
+  constant nothing reads" with a bill attached, and §23 records the same
+  defect family-wide.
+
+- **`--retries 0` skipped the navigation and blamed the site.**
+  `range(1, 0 + 1)` is empty, so the engine never called `goto`, then read
+  `about:blank` — 39 bytes, no assets — classified it as blocked and printed
+  advice about changing exits for a request it had never sent. Values below
+  1 are now refused at the CLI, along with `--pages 0`.
+
+- **`diff_runs.py` diffed runs it could not vouch for.** Two problems:
+  a missing sidecar SKIPPED the completeness guard rather than being a
+  refusal — so the check was silently disabled for exactly the files least
+  able to prove they are complete, and a failed run writes no sidecar on
+  purpose (§8); and nothing compared the SELECTION, so a
+  `writing-instruments` run against a `bags` run of the same market and
+  ordering reported "3 added, 3 removed" with exit 0. Both now refuse, and
+  two runs of one listing at different page offsets still compare.
+
+### Tests
+
+463 offline checks. Every new one was controlled by planting the fault, and
+one of those controls paid for itself immediately: the first `--retries`
+check searched the SOURCE for its own error message, so disabling the guard
+while leaving the message in place kept the suite GREEN. It now invokes the
+parser and asserts the exit. That is §22's rule — a control is only as good
+as the edit it actually made — catching a check that tested a sentence
+rather than a behaviour.
+
+### Not changed, with reasons
+
+- **One shared fetch loop across the three engines** (§26). A fair
+  recommendation and the page-2 bug is evidence for it — three copies of the
+  loop is why the parse-failure state reached one of three paths. But §1
+  states the per-engine loop as the family's design and binance-scraper is
+  the only repo that has unified it, so this is a family-wide decision
+  rather than a montblanc defect. Routing all three paths through
+  `_failure_reason` and `_SolveBudget` takes the specific divergences out
+  without rewriting the architecture under an audit's recommendation.
+- **Flat module names** (`output_writer`, `product_parser`, …) preventing
+  two scrapers in one environment. True, and deliberate family-wide: §6
+  documents a flat collection of scripts with one venv per repo.
+- **`complete` on a one-page run.** Correct as it stands: the sidecar
+  already records `total_results` and `pages_available`, so a reader can
+  tell a complete PAGE from a complete catalogue. The word describes the
+  request, which is what §21 settled.
+
 ## [0.1.2] — 2026-09-18
 
 > **Correction to v0.1.0 and v0.1.1.** Both said "no challenge of any kind
@@ -311,6 +400,7 @@ which caught two checks that were passing for the wrong reason, one because
 its fixture carried no carousel and one because its "escaped" fixture
 contained a marker verbatim.
 
+[0.1.3]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.3
 [0.1.2]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.2
 [0.1.1]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.1
 [0.1.0]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.0

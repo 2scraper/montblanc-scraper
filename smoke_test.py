@@ -59,6 +59,8 @@ import sys
 import tempfile
 from dataclasses import asdict, fields
 
+from output_writer import Product
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
@@ -101,6 +103,8 @@ LISTING_HTML = "<!doctype html><html><head><title>Montblanc</title>\n<script>var
 SOLDOUT_HTML = "<!doctype html><html><head><title>Montblanc</title>\n<script>var preloadedData = {\"pg_country\":\"FI\",\"pg_language\":\"en\",\"currency\":\"EUR\"};</script>\n<script type=\"application/ld+json\">{\"@context\": \"https://schema.org\", \"@type\": \"ItemList\", \"itemListElement\": [{\"@context\": \"https://schema.org\", \"@type\": \"ListItem\", \"position\": 1, \"item\": {\"@type\": \"Product\", \"name\": \"Set with Fineliner, Notebook & Cufflinks\", \"url\": \"/en-fi/set-with-fineliner-notebook-cufflinks-MB1003B.html\", \"image\": [\"https://www.montblanc.com/dw/image/v2/BHDB_PRD/on/demandware.static/-/Sites-montblanc-master/default/dwb5ba24ee/images/all-images/MB1003B/MB1003B_1.png?sw=315&q=90\"], \"offers\": {\"@type\": \"Offer\", \"priceCurrency\": \"EUR\", \"price\": 100, \"availability\": \"http://schema.org/InStock\"}}}, {\"@context\": \"https://schema.org\", \"@type\": \"ListItem\", \"position\": 2, \"item\": {\"@type\": \"Product\", \"name\": \"Set with Medium Backpack & Mini Wallet\", \"url\": \"/en-fi/set-with-medium-backpack-mini-wallet-MB1009B.html\", \"image\": [\"https://www.montblanc.com/dw/image/v2/BHDB_PRD/on/demandware.static/-/Sites-montblanc-master/default/dw8e55b81b/images/all-images/MB1009B/MB1009B_1.png?sw=315&q=90\"], \"offers\": {\"@type\": \"Offer\", \"priceCurrency\": \"EUR\", \"price\": 380, \"availability\": \"http://schema.org/InStock\"}}}]}</script>\n</head><body>\n<div class=\"grid-header\">class=\"result-count\">\n        \n    <span>\n        739 Results\n    </span></div>\n<div class=\"grid\" data-page-size=\"24.0\" data-page-number=\"0\" data-cfg=\"&quot;ruleId&quot;:&quot;recommended_sv_30d&quot;}\">\n<div class=\"product\" data-pid=\"MB1003B\"><div class=\"product-tile\" data-tracking-click-event=\"select_item\" data-tracking-event-payload=\"{&quot;ecommerce&quot;:{&quot;currency&quot;:&quot;EUR&quot;,&quot;productListItem&quot;:&quot;&quot;,&quot;productListId&quot;:&quot;&quot;,&quot;productListIndex&quot;:&quot;&quot;,&quot;items&quot;:[{&quot;item_id&quot;:&quot;MB1003B&quot;,&quot;item_name&quot;:&quot;Set with Fineliner, Notebook &amp; Cufflinks&quot;,&quot;item_brand&quot;:&quot;&quot;,&quot;item_size&quot;:&quot;N/A&quot;,&quot;item_reference&quot;:&quot;MB1003B&quot;,&quot;item_available&quot;:&quot;soldout&quot;,&quot;price&quot;:&quot;100.00&quot;,&quot;item_engraved&quot;:false,&quot;item_embossed&quot;:false,&quot;item_personalized&quot;:false,&quot;quantity&quot;:1,&quot;product_image_url&quot;:&quot;https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/dwb5ba24ee/images/all-images/MB1003B/MB1003B_1.png&quot;,&quot;item_collection&quot;:&quot;N/A&quot;,&quot;item_line&quot;:&quot;N/A&quot;,&quot;item_vertical&quot;:&quot;N/A&quot;,&quot;item_sellable&quot;:&quot;N/A&quot;,&quot;item_material_case&quot;:&quot;N/A&quot;,&quot;item_material_strap&quot;:&quot;N/A&quot;,&quot;item_material_leather&quot;:&quot;N/A&quot;,&quot;item_special_edition&quot;:&quot;N/A&quot;,&quot;item_dial&quot;:&quot;N/A&quot;,&quot;item_adjusted&quot;:&quot;N/A&quot;,&quot;item_list_name&quot;:&quot;listCategory.pagetemplate.:  - /on/demandware.store/Sites-MontblancROW-Site/en_FI/Search-Show&quot;,&quot;item_list_id&quot;:&quot;N/A&quot;,&quot;index&quot;:&quot;N/A&quot;,&quot;item_material_color&quot;:&quot;N/A&quot;,&quot;item_sub_collection&quot;:&quot;N/A&quot;,&quot;item_variant&quot;:&quot;N/A&quot;,&quot;item_category&quot;:&quot;Back to Work&quot;,&quot;item_category_id&quot;:&quot;back-to-work&quot;,&quot;uniqueEventId&quot;:495}]},&quot;name&quot;:&quot;Product List Click&quot;,&quot;event&quot;:&quot;select_item&quot;,&quot;reference&quot;:&quot;Product&quot;}\"><a href=\"/en-fi/set-with-fineliner-notebook-cufflinks-MB1003B.html\" class=\"pdp-link\"></a><div class=\"price\">\n<span>\n<span class=\"sales\">\n<span class=\"value\">€ 1.045,00</span>\n</span>\n</span>\n</div></div></div>\n<div class=\"product\" data-pid=\"MB1009B\"><div class=\"product-tile\" data-tracking-click-event=\"select_item\" data-tracking-event-payload=\"{&quot;ecommerce&quot;:{&quot;currency&quot;:&quot;EUR&quot;,&quot;productListItem&quot;:&quot;&quot;,&quot;productListId&quot;:&quot;&quot;,&quot;productListIndex&quot;:&quot;&quot;,&quot;items&quot;:[{&quot;item_id&quot;:&quot;MB1009B&quot;,&quot;item_name&quot;:&quot;Set with Medium Backpack &amp; Mini Wallet&quot;,&quot;item_brand&quot;:&quot;&quot;,&quot;item_size&quot;:&quot;N/A&quot;,&quot;item_reference&quot;:&quot;MB1009B&quot;,&quot;item_available&quot;:&quot;soldout&quot;,&quot;price&quot;:&quot;380.00&quot;,&quot;item_engraved&quot;:false,&quot;item_embossed&quot;:false,&quot;item_personalized&quot;:false,&quot;quantity&quot;:1,&quot;product_image_url&quot;:&quot;https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/dw8e55b81b/images/all-images/MB1009B/MB1009B_1.png&quot;,&quot;item_collection&quot;:&quot;N/A&quot;,&quot;item_line&quot;:&quot;N/A&quot;,&quot;item_vertical&quot;:&quot;N/A&quot;,&quot;item_sellable&quot;:&quot;N/A&quot;,&quot;item_material_case&quot;:&quot;N/A&quot;,&quot;item_material_strap&quot;:&quot;N/A&quot;,&quot;item_material_leather&quot;:&quot;N/A&quot;,&quot;item_special_edition&quot;:&quot;N/A&quot;,&quot;item_dial&quot;:&quot;N/A&quot;,&quot;item_adjusted&quot;:&quot;N/A&quot;,&quot;item_list_name&quot;:&quot;listCategory.pagetemplate.:  - /on/demandware.store/Sites-MontblancROW-Site/en_FI/Search-Show&quot;,&quot;item_list_id&quot;:&quot;N/A&quot;,&quot;index&quot;:&quot;N/A&quot;,&quot;item_material_color&quot;:&quot;N/A&quot;,&quot;item_sub_collection&quot;:&quot;N/A&quot;,&quot;item_variant&quot;:&quot;N/A&quot;,&quot;item_category&quot;:&quot;Back to Work&quot;,&quot;item_category_id&quot;:&quot;back-to-work&quot;,&quot;uniqueEventId&quot;:745}]},&quot;name&quot;:&quot;Product List Click&quot;,&quot;event&quot;:&quot;select_item&quot;,&quot;reference&quot;:&quot;Product&quot;}\"><a href=\"/en-fi/set-with-medium-backpack-mini-wallet-MB1009B.html\" class=\"pdp-link\"></a><div class=\"price\">\n<span>\n<span class=\"sales\">\n<span class=\"value\">€ 2.110,00</span>\n</span>\n</span>\n</div></div></div>\n</div>\n<img src=\"https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/img0.png\">\n<img src=\"https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/img1.png\">\n<img src=\"https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/img2.png\">\n</body></html>"
 
 PRODUCT_HTML = "<!doctype html><html><head><title>Montblanc</title>\n<script>var preloadedData = {\"pg_country\":\"FI\",\"pg_language\":\"en\",\"currency\":\"EUR\"};</script>\n<script type=\"application/ld+json\">{\"@context\": \"http://schema.org/\", \"@type\": \"ProductGroup\", \"name\": \"Meisterstück Gold-Coated LeGrand Fountain Pen\", \"description\": \"The Meisterstück LeGrand in deep black precious resin with gold-coated details, surmounted by the white star emblem and finished with a handcrafted gold nib, evolves into Montblanc’s design icon.\", \"sku\": \"MB132460\", \"brand\": {\"@type\": \"Brand\", \"name\": \"montblanc\"}, \"image\": [\"https://www.montblanc.com/dw/image/v2/BHDB_PRD/on/demandware.static/-/Sites-montblanc-master/default/dwdb3c668a/images/all-images/MB132460/cZirSB-URi2MKg3AktxGdw_6cd5fb48.png?sw=1250&q=90\"], \"offers\": {\"url\": \"https://www.montblanc.com/en-fi/meisterstuck-gold-coated-legrand-fountain-pen-MB132460.html\", \"@type\": \"Offer\", \"priceCurrency\": \"EUR\", \"price\": \"1000.00\", \"availability\": \"http://schema.org/InStock\"}, \"variesBy\": \"https://schema.org/size\", \"hasVariant\": [{\"@context\": \"http://schema.org/\", \"@type\": \"Product\", \"name\": \"Meisterstück Gold-Coated Classique Fountain Pen\", \"description\": \"The Meisterstück LeGrand in deep black precious resin with gold-coated details, surmounted by the white star emblem and finished with a handcrafted gold nib, evolves into Montblanc’s design icon.\", \"sku\": \"MB132464\", \"brand\": {\"@type\": \"Brand\", \"name\": \"montblanc\"}, \"image\": [\"https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/dwb24eabda/images/all-images/MB132580/QZHURSXbpEu0N--PYY-UnQ_2d65f2c5.png\"], \"offers\": {\"url\": \"https://www.montblanc.com/en-fi/meisterstuck-gold-coated-legrand-fountain-pen-MB132460.html\", \"@type\": \"Offer\", \"priceCurrency\": \"EUR\", \"price\": \"850.00\", \"availability\": \"http://schema.org/InStock\"}, \"url\": \"https://www.montblanc.com/en-fi/meisterstuck-gold-coated-classique-fountain-pen-MB132464.html\", \"size\": \"MTB_WRITING_INSTRUMENT_M\", \"color\": \"BLACK\", \"material\": \"\"}, {\"@context\": \"http://schema.org/\", \"@type\": \"Product\", \"name\": \"Meisterstück Gold-Coated Classique Fountain Pen\", \"description\": \"The Meisterstück LeGrand in deep black precious resin with gold-coated details, surmounted by the white star emblem and finished with a handcrafted gold nib, evolves into Montblanc’s design icon.\", \"sku\": \"MB132579\", \"brand\": {\"@type\": \"Brand\", \"name\": \"montblanc\"}, \"image\": [\"https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/dwb24eabda/images/all-images/MB132580/QZHURSXbpEu0N--PYY-UnQ_2d65f2c5.png\"], \"offers\": {\"url\": \"https://www.montblanc.com/en-fi/meisterstuck-gold-coated-legrand-fountain-pen-MB132460.html\", \"@type\": \"Offer\", \"priceCurrency\": \"EUR\", \"price\": \"850.00\", \"availability\": \"http://schema.org/InStock\"}, \"url\": \"https://www.montblanc.com/en-fi/meisterstuck-gold-coated-classique-fountain-pen-MB132579.html\", \"size\": \"BB\", \"color\": \"BLACK\", \"material\": \"\"}, {\"@context\": \"http://schema.org/\", \"@type\": \"Product\", \"name\": \"Meisterstück Gold-Coated Classique Fountain Pen\", \"description\": \"The Meisterstück LeGrand in deep black precious resin with gold-coated details, surmounted by the white star emblem and finished with a handcrafted gold nib, evolves into Montblanc’s design icon.\", \"sku\": \"MB132578\", \"brand\": {\"@type\": \"Brand\", \"name\": \"montblanc\"}, \"image\": [\"https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/dwb24eabda/images/all-images/MB132580/QZHURSXbpEu0N--PYY-UnQ_2d65f2c5.png\"], \"offers\": {\"url\": \"https://www.montblanc.com/en-fi/meisterstuck-gold-coated-legrand-fountain-pen-MB132460.html\", \"@type\": \"Offer\", \"priceCurrency\": \"EUR\", \"price\": \"850.00\", \"availability\": \"http://schema.org/InStock\"}, \"url\": \"https://www.montblanc.com/en-fi/meisterstuck-gold-coated-classique-fountain-pen-MB132578.html\", \"size\": \"OBB\", \"color\": \"BLACK\", \"material\": \"\"}]}</script>\n<script type=\"application/ld+json\">{\"@context\": \"https://schema.org/\", \"@type\": \"BreadcrumbList\", \"itemListElement\": [{\"@type\": \"ListItem\", \"position\": 1, \"name\": \"Home\", \"item\": \"https://www.montblanc.com/en-fi\"}, {\"@type\": \"ListItem\", \"position\": 2, \"name\": \"Writing Instruments\", \"item\": \"https://www.montblanc.com/en-fi/writing-instruments\"}, {\"@type\": \"ListItem\", \"position\": 3, \"name\": \"Fountain Pens\", \"item\": \"https://www.montblanc.com/en-fi/writing-instruments/fountain-pens\"}, {\"@type\": \"ListItem\", \"position\": 4, \"name\": \"Meisterstück Gold-Coated LeGrand Fountain Pen\", \"item\": \"https://www.montblanc.com/en-fi/meisterstuck-gold-coated-legrand-fountain-pen-MB132460.html\"}]}</script>\n</head><body><div class=\"product-detail\" data-pid=\"MB132460\"></div>\n<section class=\"recommendations\"><h2>You may also like</h2>\n<div class=\"product\" data-pid=\"MB136801\"><div class=\"product-tile\" data-tracking-click-event=\"select_item\" data-tracking-event-payload=\"{&quot;ecommerce&quot;:{&quot;currency&quot;:&quot;EUR&quot;,&quot;productListItem&quot;:&quot;&quot;,&quot;productListId&quot;:&quot;&quot;,&quot;productListIndex&quot;:&quot;&quot;,&quot;items&quot;:[{&quot;item_id&quot;:&quot;MB136801&quot;,&quot;item_name&quot;:&quot;Ink Bottle, The Legend of Zodiacs The Goat, Red, 50 ml&quot;,&quot;item_brand&quot;:&quot;mtb&quot;,&quot;item_size&quot;:&quot;50 ml&quot;,&quot;item_reference&quot;:&quot;MB136801&quot;,&quot;item_available&quot;:&quot;available&quot;,&quot;price&quot;:55,&quot;item_engraved&quot;:false,&quot;item_embossed&quot;:false,&quot;item_personalized&quot;:false,&quot;quantity&quot;:1,&quot;product_image_url&quot;:&quot;https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/dw982fb1ef/images/all-images/MB136801/uccMwncRStSfW8nKV_0jtg_0983294b.png&quot;,&quot;item_collection&quot;:&quot;Fountain Pen&quot;,&quot;item_line&quot;:&quot;N/A&quot;,&quot;item_vertical&quot;:&quot;N/A&quot;,&quot;item_sellable&quot;:&quot;N/A&quot;,&quot;item_material_case&quot;:&quot;N/A&quot;,&quot;item_material_strap&quot;:&quot;N/A&quot;,&quot;item_material_leather&quot;:&quot;N/A&quot;,&quot;item_special_edition&quot;:false,&quot;item_dial&quot;:&quot;N/A&quot;,&quot;item_adjusted&quot;:&quot;N/A&quot;,&quot;item_list_name&quot;:&quot;Product pages:  - /on/demandware.store/Sites-MontblancROW-Site/en_FI/Product-Show&quot;,&quot;item_list_id&quot;:&quot;N/A&quot;,&quot;index&quot;:&quot;N/A&quot;,&quot;item_material_color&quot;:&quot;Red&quot;,&quot;item_sub_collection&quot;:&quot;Ink Bottle&quot;,&quot;item_variant&quot;:&quot;Red&quot;,&quot;item_category&quot;:&quot;Ink bottles&quot;,&quot;item_category_id&quot;:&quot;ink-bottles&quot;,&quot;uniqueEventId&quot;:32}]},&quot;name&quot;:&quot;Product List Click&quot;,&quot;event&quot;:&quot;select_item&quot;,&quot;reference&quot;:&quot;Product&quot;}\"><a href=\"/en-fi/ink-bottle-the-legend-of-zodiacs-the-goat-red-50-ml-MB136801.html\" class=\"pdp-link\"></a><div class=\"product-price price\">\n<span>\n<span class=\"sales\">\n<span class=\"value\" content=\"55.00\"></span>\n        \n\n        € 55.00\n    </span>\n</span>\n</div></div></div>\n<div class=\"product\" data-pid=\"MB136803\"><div class=\"product-tile\" data-tracking-click-event=\"select_item\" data-tracking-event-payload=\"{&quot;ecommerce&quot;:{&quot;currency&quot;:&quot;EUR&quot;,&quot;productListItem&quot;:&quot;&quot;,&quot;productListId&quot;:&quot;&quot;,&quot;productListIndex&quot;:&quot;&quot;,&quot;items&quot;:[{&quot;item_id&quot;:&quot;MB136803&quot;,&quot;item_name&quot;:&quot;Ink Bottle, Writers Edition Homage to Bram Stoker, Purple, 50 ml&quot;,&quot;item_brand&quot;:&quot;mtb&quot;,&quot;item_size&quot;:&quot;50 ml&quot;,&quot;item_reference&quot;:&quot;MB136803&quot;,&quot;item_available&quot;:&quot;available&quot;,&quot;price&quot;:55,&quot;item_engraved&quot;:false,&quot;item_embossed&quot;:false,&quot;item_personalized&quot;:false,&quot;quantity&quot;:1,&quot;product_image_url&quot;:&quot;https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/dwdbb0f518/images/all-images/MB136803/Cb0wAF_vSGOpnDByn-jCDg_6fec0c03.png&quot;,&quot;item_collection&quot;:&quot;Fountain Pen&quot;,&quot;item_line&quot;:&quot;N/A&quot;,&quot;item_vertical&quot;:&quot;N/A&quot;,&quot;item_sellable&quot;:&quot;N/A&quot;,&quot;item_material_case&quot;:&quot;N/A&quot;,&quot;item_material_strap&quot;:&quot;N/A&quot;,&quot;item_material_leather&quot;:&quot;N/A&quot;,&quot;item_special_edition&quot;:false,&quot;item_dial&quot;:&quot;N/A&quot;,&quot;item_adjusted&quot;:&quot;N/A&quot;,&quot;item_list_name&quot;:&quot;Product pages:  - /on/demandware.store/Sites-MontblancROW-Site/en_FI/Product-Show&quot;,&quot;item_list_id&quot;:&quot;N/A&quot;,&quot;index&quot;:&quot;N/A&quot;,&quot;item_material_color&quot;:&quot;Purple&quot;,&quot;item_sub_collection&quot;:&quot;Ink Bottle&quot;,&quot;item_variant&quot;:&quot;Purple&quot;,&quot;item_category&quot;:&quot;Ink bottles&quot;,&quot;item_category_id&quot;:&quot;ink-bottles&quot;,&quot;uniqueEventId&quot;:807}]},&quot;name&quot;:&quot;Product List Click&quot;,&quot;event&quot;:&quot;select_item&quot;,&quot;reference&quot;:&quot;Product&quot;}\"><a href=\"/en-fi/ink-bottle-writers-edition-homage-to-bram-stoker-purple-50-ml-MB136803.html\" class=\"pdp-link\"></a><div class=\"product-price price\">\n<span>\n<span class=\"sales\">\n<span class=\"value\" content=\"55.00\"></span>\n        \n\n        € 55.00\n    </span>\n</span>\n</div></div></div>\n</section>\n<img src=\"https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/i0.png\">\n<img src=\"https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/i1.png\">\n<img src=\"https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/i2.png\">\n</body></html>"
+
+SINGLE_PRODUCT_HTML = "<!doctype html><html><head><title>Montblanc</title>\n<script>var preloadedData = {\"pg_country\":\"US\",\"pg_language\":\"en\",\"currency\":\"USD\"};</script>\n<script type=\"application/ld+json\">{\"@context\": \"http://schema.org/\", \"@type\": \"Product\", \"name\": \"Piston Converter StarWalker\", \"description\": \"Piston filling system, suitable for StarWalker collections\", \"sku\": \"MB128502\", \"brand\": {\"@type\": \"Brand\", \"name\": \"montblanc\"}, \"image\": [\"https://www.montblanc.com/dw/image/v2/bhdb_prd/on/demandware.static/-/Sites-montblanc-master/default/dw03a63fbf/images/all-images/MB128502/ZOI33NRcQe2T7TyO_wuDEg_d21dca94.png?sw=1250&q=90\"], \"offers\": {\"url\": \"https://www.montblanc.com/en-us/piston-converter-starwalker-MB128502.html\", \"@type\": \"Offer\", \"priceCurrency\": \"USD\", \"price\": \"15.00\", \"availability\": \"http://schema.org/InStock\"}, \"url\": \"https://www.montblanc.com/en-us/piston-converter-starwalker-MB128502.html\", \"color\": \"BLACK\"}</script>\n<script type=\"application/ld+json\">{\"@context\": \"https://schema.org/\", \"@type\": \"BreadcrumbList\", \"itemListElement\": [{\"@type\": \"ListItem\", \"position\": 1, \"name\": \"Home\", \"item\": \"https://www.montblanc.com/en-us\"}, {\"@type\": \"ListItem\", \"position\": 2, \"name\": \"Refills & Stationery - Art of The Desk\", \"item\": \"https://www.montblanc.com/en-us/refills-stationery\"}, {\"@type\": \"ListItem\", \"position\": 3, \"name\": \"Stationery\", \"item\": \"https://www.montblanc.com/en-us/refills-stationery/stationery\"}, {\"@type\": \"ListItem\", \"position\": 4, \"name\": \"Fountain Pen Accessories\", \"item\": \"https://www.montblanc.com/en-us/refills-stationery/stationery/fountain-pen-accessories\"}, {\"@type\": \"ListItem\", \"position\": 5, \"name\": \"Piston Converter StarWalker\", \"item\": \"https://www.montblanc.com/en-us/piston-converter-starwalker-MB128502.html\"}]}</script>\n</head><body><div class=\"product-detail\" data-pid=\"MB128502\"></div>\n<img src=\"https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/i0.png\">\n<img src=\"https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/i1.png\">\n<img src=\"https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/i2.png\">\n</body></html>"
 
 GRID_FRAGMENT_HTML = "<div class=\"product-item-wrapper\" data-position=\"25.0\"><div class=\"product\" data-pid=\"MB223111VG\"><div class=\"product-tile\" data-tracking-click-event=\"select_item\" data-tracking-event-payload=\"{&quot;ecommerce&quot;:{&quot;currency&quot;:&quot;EUR&quot;,&quot;productListItem&quot;:&quot;&quot;,&quot;productListId&quot;:&quot;&quot;,&quot;productListIndex&quot;:&quot;&quot;,&quot;items&quot;:[{&quot;item_id&quot;:&quot;MB223111VG&quot;,&quot;item_name&quot;:&quot;Montblanc Panorama Medium Backpack&quot;,&quot;item_brand&quot;:&quot;mtb&quot;,&quot;item_size&quot;:&quot;N/A&quot;,&quot;item_reference&quot;:&quot;MB223111VG&quot;,&quot;item_available&quot;:&quot;soldout&quot;,&quot;price&quot;:1790,&quot;item_engraved&quot;:false,&quot;item_embossed&quot;:false,&quot;item_personalized&quot;:false,&quot;quantity&quot;:1,&quot;product_image_url&quot;:&quot;https://www.montblanc.com/on/demandware.static/-/Sites-montblanc-master/default/dwdd7ed333/images/all-images/MB223111/0N8L85BORFWgngIKcZIHUQ_0219c0da.png&quot;,&quot;item_collection&quot;:&quot;Technical Fabric&quot;,&quot;item_line&quot;:&quot;N/A&quot;,&quot;item_vertical&quot;:&quot;N/A&quot;,&quot;item_sellable&quot;:&quot;N/A&quot;,&quot;item_material_case&quot;:&quot;N/A&quot;,&quot;item_material_strap&quot;:&quot;N/A&quot;,&quot;item_material_leather&quot;:&quot;Fabric&quot;,&quot;item_special_edition&quot;:false,&quot;item_dial&quot;:&quot;N/A&quot;,&quot;item_adjusted&quot;:&quot;N/A&quot;,&quot;item_list_name&quot;:&quot;listCategory.pagetemplate.otherpages:  - /on/demandware.store/Sites-MontblancROW-Site/en_FI/Search-UpdateGrid&quot;,&quot;item_list_id&quot;:&quot;N/A&quot;,&quot;index&quot;:&quot;N/A&quot;,&quot;item_material_color&quot;:&quot;khaki&quot;,&quot;item_sub_collection&quot;:&quot;City Bags&quot;,&quot;item_variant&quot;:&quot;khaki&quot;,&quot;item_category&quot;:&quot;Backpacks&quot;,&quot;item_category_id&quot;:&quot;backpacks&quot;,&quot;uniqueEventId&quot;:260}]},&quot;name&quot;:&quot;Product List Click&quot;,&quot;event&quot;:&quot;select_item&quot;,&quot;reference&quot;:&quot;Product&quot;}\"><a href=\"/en-fi/montblanc-panorama-medium-backpack-MB223111VG.html\" class=\"pdp-link\"></a><div class=\"price\">\n<span class=\"price-container\">\n<span class=\"sales\">\n            \n            € 1,790.00\n\n\n        </span>\n</span>\n</div></div></div></div>\n<img src=\"https://www.montblanc.com/on/demandware.static/x0.png\">\n<img src=\"https://www.montblanc.com/on/demandware.static/x1.png\">\n<img src=\"https://www.montblanc.com/on/demandware.static/x2.png\">"
 
@@ -372,6 +376,276 @@ def check_page_and_position_are_threaded_through():
           [r.position for r in p1], [r.position for r in p2])
     pairs = {(r.page, r.position) for r in p1 + p2}
     equal("page+position: unique across a two-page run", len(pairs), len(p1) + len(p2))
+
+
+SINGLE_PRODUCT_URL = ("https://www.montblanc.com/en-us/"
+                      "piston-converter-starwalker-MB128502.html")
+
+
+def check_a_product_with_no_variants_still_parses():
+    """The common detail shape, and the one that returned NOTHING.
+
+    §20 taught "a DETAIL page may publish a different JSON-LD type than the
+    listing", and this repo handled `ProductGroup` on that basis. The
+    correction a third-party audit found: a detail page publishes a
+    different type **depending on the product**. A product with no variants
+    publishes a plain `Product`.
+
+    That is not an edge case here. Measured 2026-10-07 over 14 product URLs
+    taken straight from a live `writing-instruments` listing: **14 of 14**
+    were plain `Product`, and all 14 parsed to ZERO rows — so `--mode
+    product` was broken for essentially the whole catalogue.
+
+    It stayed invisible because both captured product pages happened to be
+    variant groups, and because the canary pinned a 16-variant Meisterstück:
+    a fixture that picks the lucky case is a guard that cannot fail (§21).
+    """
+    from product_parser import parse_product_detail, ld_blocks
+
+    types = [b.get("@type") for b in ld_blocks(SINGLE_PRODUCT_HTML)]
+    check("single: the fixture really is a plain Product, not a ProductGroup",
+          "Product" in types and "ProductGroup" not in types, types)
+
+    rows = parse_product_detail(SINGLE_PRODUCT_HTML, SINGLE_PRODUCT_URL)
+    equal("single: it yields exactly one row", len(rows), 1)
+    row = rows[0]
+    equal("single: sku", row.sku, "MB128502")
+    equal("single: price", row.price, 15.0)
+    equal("single: currency", row.currency, "USD")
+    equal("single: in_stock", row.in_stock, True)
+    equal("single: price_source", row.price_source, "jsonld")
+    equal("single: category from the breadcrumb", row.category,
+          "Fountain Pen Accessories")
+    # No group above it, so no `variant_of`. Writing its own sku there would
+    # invent a group that does not exist.
+    equal("single: variant_of is None", row.variant_of, None)
+    equal("single: mode", row.mode, "product")
+
+    # The §20 guard must still hold in BOTH directions after the widening:
+    # a standalone Product is top-level, while a listing nests its products
+    # inside itemListElement, so this must not start eating listings.
+    from product_parser import parse_products
+    equal("single: the listing parser still finds nothing on it",
+          len(parse_products(SINGLE_PRODUCT_HTML, SINGLE_PRODUCT_URL)), 0)
+    equal("single: the detail parser still finds nothing on a LISTING",
+          len(parse_product_detail(LISTING_HTML, LISTING_URL)), 0)
+    equal("single: and a variant group still yields all its variants",
+          len(parse_product_detail(PRODUCT_HTML, PRODUCT_URL)), 3)
+
+
+def check_a_parse_failure_is_not_ok_on_ANY_page():
+    """The same fault must report the same way wherever it happens.
+
+    `parse_failed` was set on every page and consulted on PAGE 1 ONLY, so:
+
+        page 1   -> stop_reason 'parser_found_nothing'          not complete
+        page 2+  -> 0 rows -> no fresh skus -> 'no_new_products' COMPLETE
+
+    A run that logged "failure in THIS parser" then exited 0 claiming the
+    catalogue had ended. The fix puts the state into `ok`, which is the one
+    predicate the page-1 branch, the sequential loop and the concurrent
+    workers already share.
+    """
+    from output_writer import COMPLETE_STOP_REASONS
+    for module in ENGINES:
+        engine = _import_engine(module)
+        if engine is None:
+            continue
+        outcome = engine.PageOutcome(page_num=2, url="u")
+        outcome.state = "parse_failed"
+        check("%s: a parse failure is NOT ok" % module, not outcome.ok,
+              "ok() ignores the state, so page 2+ reports a complete run")
+        equal("%s: and it is named" % module,
+              engine._failure_reason(outcome), "parser_found_nothing")
+
+        # The other two failure kinds must keep their own names.
+        blocked = engine.PageOutcome(page_num=1, url="u")
+        blocked.blocked_by = "edge refusal"
+        equal("%s: a block is still a block" % module,
+              engine._failure_reason(blocked), "blocked_edge refusal")
+        timeout = engine.PageOutcome(page_num=1, url="u")
+        timeout.load_failed = True
+        equal("%s: a timeout is still a timeout" % module,
+              engine._failure_reason(timeout), "page_load_timeout")
+        good = engine.PageOutcome(page_num=1, url="u")
+        good.state = "content"
+        check("%s: a good page is still ok" % module, good.ok)
+
+        # And no path may spell a failure reason by hand any more.
+        source = open(os.path.join(HERE, module + ".py"), encoding="utf-8").read()
+        equal("%s: one spelling of the failure reason" % module,
+              source.count('f"blocked_{'), 1)
+
+    check("'parser_found_nothing' never counts as complete",
+          "parser_found_nothing" not in COMPLETE_STOP_REASONS)
+
+
+def check_one_solve_budget_covers_every_purchase():
+    """§17's "a policy constant nothing reads", with a bill attached.
+
+    `handle_captcha_if_present` runs twice per attempt and only the SECOND
+    call was counted, so the uncounted one repeated on every block-retry.
+    Reproduced with the solver stubbed: **3 invocations against
+    `SOLVES_PER_PAGE = 1`**.
+    """
+    import page_flow
+    for module in ENGINES:
+        engine = _import_engine(module)
+        if engine is None:
+            continue
+        calls = {"n": 0}
+        budget = engine._SolveBudget(page_flow.SOLVES_PER_PAGE)
+
+        def solve():
+            calls["n"] += 1
+            return False        # a challenge that the solve did not clear
+
+        # Exactly the loop's shape: both call sites, every block-retry.
+        for _ in range(page_flow.BLOCK_RETRIES_WITHOUT_POOL + 1):
+            budget.spend(solve)
+            budget.spend(solve)
+
+        equal("%s: the solver runs at most SOLVES_PER_PAGE times" % module,
+              calls["n"], page_flow.SOLVES_PER_PAGE)
+        equal("%s: and the budget agrees with what was spent" % module,
+              budget.spent, calls["n"])
+
+        # BOTH call sites must go through it — the bug was one that did not.
+        source = open(os.path.join(HERE, module + ".py"), encoding="utf-8").read()
+        equal("%s: every handle_captcha_if_present call is budgeted" % module,
+              source.count("budget.spend(lambda: handle_captcha_if_present"),
+              source.count("handle_captcha_if_present(") - 1)  # -1 for the def
+
+
+def check_retries_must_mean_at_least_one_attempt():
+    """`--retries 0` skipped the navigation and blamed the SITE for it.
+
+    `range(1, 0 + 1)` is empty, so the engine never called `goto`, then read
+    `about:blank` — 39 bytes, no assets — classified it as blocked, and
+    printed advice about changing exits for a request it had not sent.
+    """
+    # Asserted by RUNNING the parser, not by grepping for the message.
+    #
+    # The first version of this check searched the source for the error
+    # string. Controlled by disabling the guard but leaving the string in
+    # place, it stayed GREEN — it was testing that a sentence exists, not
+    # that a value is refused (§22).
+    for module in ENGINES:
+        engine = _import_engine(module)
+        if engine is None:
+            continue
+        for bad in ("0", "-1"):
+            argv = ["prog", "--url",
+                    "https://www.montblanc.com/en-us/writing-instruments",
+                    "--retries", bad]
+            old_argv, old_err = sys.argv, sys.stderr
+            sys.argv, sys.stderr = argv, io.StringIO()
+            try:
+                engine.parse_args()
+            except SystemExit as exc:
+                check("%s refuses --retries %s" % (module, bad),
+                      exc.code != 0, "exited %r" % (exc.code,))
+            except Exception as exc:          # noqa: BLE001
+                check("%s refuses --retries %s" % (module, bad), False,
+                      "raised %s instead of exiting" % type(exc).__name__)
+            else:
+                check("%s refuses --retries %s" % (module, bad), False,
+                      "accepted it — the navigation loop would never run and "
+                      "the page would then be reported as blocked")
+            finally:
+                sys.argv, sys.stderr = old_argv, old_err
+
+        source = open(os.path.join(HERE, module + ".py"), encoding="utf-8").read()
+        check("%s still loops over ATTEMPTS" % module,
+              "range(1, args.retries + 1)" in source)
+
+
+def check_diff_refuses_a_run_it_cannot_vouch_for():
+    """A missing sidecar is a REFUSAL, not a reason to skip the check.
+
+    `_check_comparable` skipped its completeness guard when no sidecar was
+    found — so it was silently disabled for exactly the files that cannot
+    prove they are complete. Two sidecar-less runs diffed clean with exit 0.
+
+    A failed run writes no sidecar ON PURPOSE (§8), so "no sidecar" is a
+    state this repo produces deliberately and the one it must not read as
+    "probably fine".
+    """
+    import diff_runs
+    with tempfile.TemporaryDirectory() as tmp:
+        rows = [asdict(Product(url="u1", sku="MB1", title="t", price=1.0,
+                               currency="EUR", page=1, position=1,
+                               mode="category", locale="en-us",
+                               sort="price-asc"))]
+        old = os.path.join(tmp, "old.json")
+        new = os.path.join(tmp, "new.json")
+        for path in (old, new):
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(rows, f)
+
+        args = argparse.Namespace(old=old, new=new, force=False)
+        check("diff: two runs with no sidecar are refused",
+              not diff_runs._check_comparable(args),
+              "the completeness guard was skipped for the files least able "
+              "to prove completeness")
+
+        # With complete sidecars naming one listing, it must diff.
+        meta = {"status": "complete", "mode": "category",
+                "pages_completed": 1, "pages_requested": 1,
+                "stop_reason": "completed",
+                "start_url": "https://www.montblanc.com/en-us/writing-instruments"}
+        for path in (old, new):
+            with open(os.path.splitext(path)[0] + ".meta.json", "w",
+                      encoding="utf-8") as f:
+                json.dump(meta, f)
+        check("diff: two complete runs of one listing ARE comparable",
+              diff_runs._check_comparable(args))
+
+
+def check_diff_refuses_two_different_listings():
+    """The fourth axis, and the one this tool missed.
+
+    `mode`, `sort` and `locale` were each guarded because each decides WHICH
+    products end up in the file. So does the SELECTION, and nothing checked
+    it: a `writing-instruments` run against a `bags` run of the same market
+    and ordering reported "3 added, 3 removed" with exit 0 — every line an
+    artefact of comparing two different categories.
+    """
+    import diff_runs
+    with tempfile.TemporaryDirectory() as tmp:
+        def write(name, sku, url):
+            rows = [asdict(Product(url="u", sku=sku, title="t", price=1.0,
+                                   currency="EUR", page=1, position=1,
+                                   mode="category", locale="en-us",
+                                   sort="price-asc"))]
+            path = os.path.join(tmp, name + ".json")
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(rows, f)
+            with open(os.path.join(tmp, name + ".meta.json"), "w",
+                      encoding="utf-8") as f:
+                json.dump({"status": "complete", "mode": "category",
+                           "pages_completed": 1, "pages_requested": 1,
+                           "stop_reason": "completed", "start_url": url}, f)
+            return path
+
+        pens = write("pens", "MBP1",
+                     "https://www.montblanc.com/en-us/writing-instruments")
+        bags = write("bags", "MBB1",
+                     "https://www.montblanc.com/en-us/bags")
+        check("diff: two different categories are refused",
+              not diff_runs._check_comparable(
+                  argparse.Namespace(old=pens, new=bags, force=False)))
+
+        # And the false positive it must NOT produce: two runs of the SAME
+        # listing legitimately carry different paging parameters.
+        a = write("a", "MB1",
+                  "https://www.montblanc.com/en-us/writing-instruments?start=0&sz=24")
+        b = write("b", "MB1",
+                  "https://www.montblanc.com/en-us/writing-instruments?start=24&sz=24")
+        check("diff: the same listing at different offsets still compares",
+              diff_runs._check_comparable(
+                  argparse.Namespace(old=a, new=b, force=False)),
+              "paging parameters are not a change of selection")
 
 
 def check_the_sites_own_arithmetic_is_read():
