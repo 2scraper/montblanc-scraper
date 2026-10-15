@@ -171,7 +171,7 @@ class PageOutcome:
         """
         return (not self.load_failed
                 and self.blocked_by is None
-                and self.state != "parse_failed")
+                and self.state not in ("parse_failed", "not_found"))
 
 
 # Every `scheme://user:pass@` in a string, however many times it occurs.
@@ -406,7 +406,7 @@ def _parse_for_mode(html: str, url: str, args, page_num: int = 1):
     through to its tile path — which on a real product page returns the
     "you may also like" carousel as eighteen products, measured, in
     silence. `parse_products` refuses a detail page for that reason and
-    `smoke_test.py` pins both directions (§20).
+    `smoke_test.py` pins both directions.
 
     `page_num` is threaded through rather than defaulted, because `position`
     restarts at 1 on every page: without the page number beside it, a row
@@ -438,7 +438,7 @@ def _is_endpoint(url: str) -> bool:
     diverge in shape for no reason.
 
     Montblanc's own front end does call a fragment endpoint
-    (`…/Search-UpdateGrid?cgid=…&start=…&sz=…`) — checked, per CLAUDE.md §21,
+    (`…/Search-UpdateGrid?cgid=…&start=…&sz=…`) — checked,
     before assuming a browser was needed — but it answers with HTML tiles and
     NO JSON-LD, so it is read exactly like a page and the full-page route is
     preferred anyway for keeping structured data on every page.
@@ -665,12 +665,25 @@ def _fetch_one_page(session, args, pool, page_num: int, url: str) -> PageOutcome
         # so a different exit is the only thing that plausibly changes the
         # outcome.
         if block_attempt < block_retries:
-            logger.warning("Page %d came back as %s from %s — retrying from "
-                           "another exit (%d/%d).", page_num, state,
-                           mask(pool.current), block_attempt + 1, block_retries)
-            pool.advance(f"{state} on page {page_num}")
-            session.relaunch()
-            d = _driver(session)
+            if has_pool:
+                logger.warning("Page %d came back as %s from %s — retrying "
+                               "from another exit (%d/%d).", page_num, state,
+                               mask(pool.current), block_attempt + 1,
+                               block_retries)
+                pool.advance(f"{state} on page {page_num}")
+                session.relaunch()
+                d = _driver(session)
+            else:
+                # No pool (and `pool` may be None), so nowhere else to go —
+                # a plain re-fetch through the same access path, after a
+                # pause. Not relaunched: over --cdp-endpoint a profile allows
+                # one live connection and the retry builds on its cookies.
+                pause = args.retry_delay * (block_attempt + 1)
+                logger.warning("Page %d came back as %s — re-fetching through "
+                               "the same access path in %.1fs (%d/%d).",
+                               page_num, state, pause, block_attempt + 1,
+                               block_retries)
+                time.sleep(pause)
 
     if load_failed:
         logger.error("Gave up loading %s after %d attempt(s).", url, args.retries)
@@ -678,6 +691,18 @@ def _fetch_one_page(session, args, pool, page_num: int, url: str) -> PageOutcome
         return outcome
 
     outcome.state = state
+
+    if state == "not_found":
+        # The site answered that this address does not exist (HTTP 404, or
+        # its own error page where the driver exposes no status). Not a
+        # block — no exit or key changes it — and not an empty catalogue
+        # either: nothing was read, so the run reports exit 5 (or 6 with
+        # rows from other pages), never exit 4. Not retried, for the same
+        # reason: the same URL gets the same answer.
+        logger.error("Montblanc answered that %s does not exist (page %d). "
+                     "Check the URL, locale and category path.", url, page_num)
+        outcome.final_url = d["current_url"]()
+        return outcome
 
     if state == "blocked":
         # Mirrors playwright_scraper's twin of this block: an edge refusal
@@ -776,7 +801,7 @@ def _fetch_one_page(session, args, pool, page_num: int, url: str) -> PageOutcome
                             "would get %r and a different set of products.",
                             listing.site_default_sort)
 
-    # §20: tell a BROKEN PARSER apart from an EMPTY CATEGORY before anything
+    # Tell a BROKEN PARSER apart from an EMPTY CATEGORY before anything
     # downstream reports "0 products" and sends the reader to check the URL.
     if not products and page_flow.looks_like_a_parse_failure(
             state, len(products), product_link_count(html or "")):
@@ -868,7 +893,7 @@ class _SolveBudget:
 
     Nothing about that is visible where a challenge is rare, which is why it
     survived: the counter looked enforced and the constant read like a limit.
-    It is CLAUDE.md §17's "a policy constant nothing reads", with a bill
+    It is the familiar "a policy constant nothing reads", with a bill
     attached.
 
     The budget deliberately does NOT reset on rotation: a fresh exit is a
@@ -903,6 +928,8 @@ def _failure_reason(outcome) -> str:
     """
     if outcome.state == "parse_failed":
         return "parser_found_nothing"
+    if outcome.state == "not_found":
+        return "not_found"
     if outcome.load_failed:
         return "page_load_timeout"
     return f"blocked_{outcome.blocked_by}"
@@ -1256,14 +1283,27 @@ def parse_args():
     args = p.parse_args()
     # Fill --twocaptcha-key / --cdp-endpoint / --proxy / --url from the
     # environment or .env when the flag was not given. An explicit flag wins.
+    # What the user TYPED, captured before the environment fills anything
+    # in. After `apply` a --url from MONTBLANC_URL is indistinguishable from
+    # one on the command line, and judging the conflicts below on it made a
+    # `.env` URL refuse --query and --locale, and silently replace the
+    # category --category asked for (exit 0, the wrong category).
+    typed_url = args.url
     env_config.apply(args)
+    if args.url and not typed_url and (args.query or args.category or args.locale):
+        # A URL from the environment is a DEFAULT target. A builder flag on
+        # the command line is a more specific request, so it wins and the
+        # environment's URL is set aside.
+        logger.info("Ignoring MONTBLANC_URL from the environment: the "
+                    "command line names its own target.")
+        args.url = None
 
     # --url and the query flags are two ways to say the same thing, and only
     # one of them may win. Refused rather than merged: a --locale that
     # disagreed with the locale already in a URL would silently read a
     # different MARKET than the address names — and on this site that is a
     # different price, not just a different language. This is the family's
-    # --country ban (CLAUDE.md §10) applied where it actually bites: there is
+    # --country ban applied where it actually bites: there is
     # one host for all 72 markets, so the flag cannot contradict a HOSTNAME,
     # only a path segment, and this is where that is caught.
     if args.url and args.locale:
@@ -1317,7 +1357,7 @@ def parse_args():
         # Refused rather than attempted. This parser reads Montblanc's own
         # JSON-LD and its `-MB{id}.html` URL shape; pointing it at another
         # site would not fail loudly, it would return zero rows and look like
-        # an empty result (§8). The REASON is given, because "is not a
+        # an empty result. The REASON is given, because "is not a
         # Montblanc site" about a host that plainly is one sends the reader
         # hunting a typo they did not make.
         p.error(f"{args.url!r} {why}.")
@@ -1357,6 +1397,16 @@ def parse_args():
                 "blocked." % args.retries)
     if args.pages < 1:
         p.error("--pages must be at least 1")
+    if args.concurrency < 1:
+        p.error("--concurrency must be at least 1 (it counts workers)")
+    # Negative pauses and budgets are refused rather than clamped: a negative
+    # delay reached time.sleep() as a ValueError mid-run, and a negative
+    # block-retry count silently meant "no retries".
+    for flag, value in (("--delay", args.delay),
+                        ("--retry-delay", args.retry_delay),
+                        ("--proxy-block-retries", args.proxy_block_retries)):
+        if value < 0:
+            p.error("%s must be 0 or more, got %s" % (flag, value))
     return args
 
 

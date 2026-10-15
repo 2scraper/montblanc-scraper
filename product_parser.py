@@ -17,7 +17,7 @@ homepage, four category listings, a search page, two product pages and one
     product page   2 JSON-LD blocks — `BreadcrumbList` and **`ProductGroup`**,
                    NOT `Product`.
 
-That second line is CLAUDE.md §20's trap, present here exactly as described:
+That second line is the trap, present here exactly as described:
 porting a listing parser onto a detail page returns zero rows in silence,
 because it is looking for a type the page does not publish. `parse_products`
 and `parse_product_detail` are therefore separate entry points, and the smoke
@@ -33,7 +33,7 @@ A listing row cannot answer "what does the Medium nib cost"; these can.
     Read `url` on a variant, never `offers.url`.
     Every variant's `offers.url` is the GROUP's page, so using it makes all
     sixteen rows point at the same address while their titles, skus and
-    prices all look correct — §4's "product URL under offers.url" trap
+    prices all look correct — the "product URL under offers.url" trap
     inverted, and just as quiet.
 
 No JSON-LD id, so the URL is the id
@@ -57,7 +57,7 @@ Coverage over 144 tiles on six categories: `item_id` and `item_name` 100%,
 `item_category` 97%, `item_collection` 96%, `item_material_color` 94%,
 `item_sub_collection` 93%.
 
-This is §4's "the site's own data attribute is a better anchor than any
+This is the rule "the site's own data attribute is a better anchor than any
 class", with the twist that here it SUPPLEMENTS structured data rather than
 replacing it. The JSON-LD stays primary — it is one object per product and
 cannot be mis-scoped — and the payload is joined onto it by sku.
@@ -93,7 +93,7 @@ That number is a MINIMUM over the group's variants, not the price of
 anything you can buy. It is recorded, because "From 515" is a useful and
 true fact, but it is recorded with `price_source="dom_range"` so a consumer
 comparing prices can exclude it. Writing it as an ordinary price would be
-§8's "never present a guess as a fact" with a decimal point on it.
+the rule "never present a guess as a fact" with a decimal point on it.
 
 The `content="515.00"` attribute is read in preference to the text: it is
 the site's own machine-readable value, already normalised, and it sidesteps
@@ -101,7 +101,7 @@ the currency symbol entirely.
 
 There is NO discount chain here, so there is no DOM overlay
 ------------------------------------------------------------
-§4 says to count the KINDS of struck-through price before writing either
+The rule is to count the KINDS of struck-through price before writing either
 path, and to delete the overlay rather than port it where a site has no
 discount chain. Counted here: 0 `strike`, 0 `was-price`, 0
 `price-standard`, 0 `discount`, 0 Omnibus 30-day-low, on listings AND
@@ -120,16 +120,16 @@ in the engines.
 
 `akamai` is not a marker, and counting it is what proved that
 -------------------------------------------------------------
-§18: count every candidate on a page you KNOW is good before adding it.
+Count every candidate on a page you KNOW is good before adding it.
 Done here, and it changed the set. Montblanc is Akamai-fronted and its own
 performance script references `akamaihd.net` on every page it serves —
 1 occurrence on the homepage, 1 on a listing, 1 on a product page. A bare
 `akamai` marker would report every page blocked, which is precisely the
-tokopedia-scraper failure that put the rule in CLAUDE.md.
+tokopedia-scraper failure that taught the rule.
 
 Every other candidate counted 0 on all four known-good captures, and those
 are the ones below: `errors.edgesuite.net`, `Reference #`, `Access Denied`,
-and the vendor names. `cf-turnstile` is deliberately absent (§8/§19: it is
+and the vendor names. `cf-turnstile` is deliberately absent (it is
 injected by 2Captcha's own auto-solve extension and is measured useless);
 `challenges.cloudflare.com` is kept instead, at 0 on every served page here.
 """
@@ -176,7 +176,7 @@ CANONICAL_HOST = "www.montblanc.com"
 # `https://www.montblanc.com/en-fi/writing-instruments` — the very URL the
 # site geo-redirects a Finnish visitor to — with "en-fi is not one of
 # Montblanc's 72 locales", which is false and sends the reader hunting for a
-# typo they did not make. That is §5's "refuse WITH THE REASON, and do not
+# typo they did not make. That is the rule "refuse WITH THE REASON, and do not
 # give a reason that is untrue" failing in the most embarrassing available
 # direction.
 #
@@ -210,7 +210,7 @@ _LOCALE_RE = re.compile(r"^/([a-z]{2}-[a-z]{2})(?=/|$)")
 # Pagination
 # ---------------------------------------------------------------------------
 # Salesforce Commerce Cloud, and it paginates with `start`/`sz` on the
-# CATEGORY URL ITSELF — verified rather than assumed (§7):
+# CATEGORY URL ITSELF — verified rather than assumed:
 #
 #     /en-fi/bags/backpacks?start=24&sz=24
 #     -> HTTP 200, a full page, its own JSON-LD ItemList holding item 25.
@@ -222,7 +222,7 @@ _LOCALE_RE = re.compile(r"^/([a-z]{2}-[a-z]{2})(?=/|$)")
 # because it keeps structured data on every page rather than only the first.
 #
 # Position restarts at 1 on every slice, which is why `page` is threaded
-# through the parser and why the suite asserts the PAIR is unique (§18).
+# through the parser and why the suite asserts the PAIR is unique.
 PAGE_PARAM_START = "start"
 PAGE_PARAM_SIZE = "sz"
 
@@ -240,7 +240,7 @@ PAGE_SIZE = 24
 # ---------------------------------------------------------------------------
 # Sort rules — and why the default is not the site's
 # ---------------------------------------------------------------------------
-# §21 says to run the same query under two orderings and diff the id sets,
+# The rule is to run the same query under two orderings and diff the id sets,
 # because on a site that sells placement the ordering decides WHICH rows are
 # in the file. Done here, on page 1 of `writing-instruments` (2026-09-17):
 #
@@ -322,7 +322,7 @@ def locale_from_url(url: str) -> Optional[str]:
 def is_supported_url(url: str) -> Tuple[bool, str]:
     """(ok, reason). The reason is shown to the user, so it must be true.
 
-    §5: refuse a host WITH THE REASON, and never with a reason that sends the
+    Refuse a host WITH THE REASON, and never with a reason that sends the
     reader looking for a typo they did not make.
 
     The reason NEVER repeats the URL. Every caller prefixes it with the URL
@@ -336,7 +336,7 @@ def is_supported_url(url: str) -> Tuple[bool, str]:
     if not host:
         return False, "has no hostname"
     if host not in HOSTS:
-        # No count in this message on purpose (§13): the number of markets
+        # No count in this message on purpose: the number of markets
         # is a living thing and a stale figure in an error message reads as
         # current. The shape is what the reader needs.
         return False, (f"{host} is not a Montblanc storefront — this scraper "
@@ -410,7 +410,7 @@ def category_from_url(url: str) -> Optional[str]:
 
 
 def _replace_query(url: str, updates: Dict[str, Any]) -> str:
-    """Set query parameters, REPLACING rather than appending (§5).
+    """Set query parameters, REPLACING rather than appending.
 
     Existing parameters are preserved — a filtered category URL carries its
     refinements in the query and dropping them would silently widen the run
@@ -430,10 +430,10 @@ def page_url(url: str, page_num: int, page_size: int = PAGE_SIZE,
              sort: Optional[str] = None) -> str:
     """The URL for page `page_num` (1-based) of this listing.
 
-    §7 layer 2: the address of page N is constructible, so pages after the
+    Pagination layer 2: the address of page N is constructible, so pages after the
     first can be fetched independently and therefore concurrently. Verified
     against the site's own next-link, which builds the same `start`/`sz`
-    pair — the check §7 demands before trusting a constructed URL.
+    pair — the check needed before trusting a constructed URL.
     """
     if page_num < 1:
         raise ValueError(f"page_num must be >= 1, got {page_num}")
@@ -507,7 +507,7 @@ _CURRENCY_SYMBOLS = {
 
 # Symbols that cannot name themselves. A match on one of these yields the
 # locale's currency where the caller supplied it, and None otherwise — never
-# a plausible guess (§4's ladder, rung 4 vs rung 5).
+# a plausible guess (the ladder, rung 4 vs rung 5).
 _HOST_RESOLVED_SYMBOLS = {"$", "kr", "¥"}
 
 # Matched longest-first so a prefix is not swallowed by a bare symbol.
@@ -531,7 +531,7 @@ _CURRENCY_CODES = frozenset("""
 # no-break variant so the number does not wrap: plain space, NBSP (U+00A0),
 # narrow NBSP (U+202F) and thin space (U+2009) all appear on the web. Kept
 # even though Montblanc groups with a comma in every market measured,
-# because the cost is nothing and the failure mode is silent (§4: missing
+# because the cost is nothing and the failure mode is silent (missing
 # these parsed "1 234 €" as 234).
 _GROUP_SPACES = "    "
 
@@ -551,7 +551,7 @@ _PRICE_RE = re.compile(
 
 # A percentage badge is not a price, and removing it BEFORE matching is the
 # only way to be sure of that — a rejected match has still consumed the
-# currency symbol belonging to the price beside it (§4). No discount badge
+# currency symbol belonging to the price beside it. No discount badge
 # was found on this site, so this guard has nothing to do today; it is kept
 # because it is three lines and a "Save 10%" banner is one merchandising
 # decision away.
@@ -658,22 +658,22 @@ def _str_or_none(value: Any) -> Optional[str]:
 # ---------------------------------------------------------------------------
 # Page-level facts
 # ---------------------------------------------------------------------------
-# The site prints its own total above the grid, which is §7's layer 2 with
+# The site prints its own total above the grid, which is the second pagination layer with
 # the site doing the arithmetic:
 #
 #     <div class="result-count"><span> 280 Results </span></div>
 #
 # Present on page 1 only — a `start=24` slice does not repeat it — which is
-# exactly the shape §7 assumes: page 1 is fetched alone and decides whether
+# exactly the shape the page plan assumes: page 1 is fetched alone and decides whether
 # and how far the rest can be addressed.
-# The site prints its own total above the grid, which is §7's layer 2 with
+# The site prints its own total above the grid, which is the second pagination layer with
 # the site doing the arithmetic:
 #
 #     <div class="result-count"><span> 280 Results </span></div>
 #
 # THE NOUN IS LOCALISED AND THE NUMBER IS NOT, so this matches the digits
 # inside the element and ignores the word entirely. That is not tidiness; it
-# is the second-country rule (§15 step 5) catching a real bug. The first
+# is the second-country rule catching a real bug. The first
 # version listed the nouns it expected — Results, Ergebnisse, Résultats — and
 # the very first run against the US market came back with `total_results:
 # None`, because en-us writes:
@@ -684,7 +684,7 @@ def _str_or_none(value: Any) -> Optional[str]:
 # thought of; the digits are the same in all of them.
 #
 # Present on page 1 only — a `start=24` slice does not repeat it — which is
-# exactly the shape §7 assumes: page 1 is fetched alone and decides whether
+# exactly the shape the page plan assumes: page 1 is fetched alone and decides whether
 # and how far the rest can be addressed.
 _TOTAL_RE = re.compile(
     r'class="result-count"[^>]*>\s*<span>\s*([\d.,\u00a0\u202f ]+?)\s*[^\d<]*</span>',
@@ -747,7 +747,7 @@ def page_currency(html: str) -> Optional[str]:
 # — on every single page of every single run, and a `sort` column that
 # recorded the wrong ordering on every row. A check that fires on every
 # healthy run teaches the reader to ignore checks, and a column that is
-# confidently wrong is worse than one that is absent (§8).
+# confidently wrong is worse than one that is absent.
 #
 # So: the ordering recorded on a row is the one REQUESTED, read back from
 # the URL's own `srule` — a fact about the request, which is the only fact
@@ -772,7 +772,7 @@ def default_sort_rule(html: str) -> Optional[str]:
     would get, which is worth recording so a reader can see what the run
     chose to override.
 
-    The pattern matches BOTH spellings of the same thing, which is §20's
+    The pattern matches BOTH spellings of the same thing, which is the rule
     "a marker must survive both encodings" earning its keep in this file:
     the blob lives inside an HTML ATTRIBUTE, so the raw bytes an HTTP client
     receives carry `&quot;ruleId&quot;:&quot;…&quot;` while a browser hands
@@ -829,8 +829,7 @@ def pages_to_fetch(pages_requested: int, pages_avail: Optional[int]) -> int:
 
     Clamped to what the site says exists so a `--pages 50` on a two-page
     category costs two fetches rather than fifty. Where the site stated no
-    count, the request stands and the run discovers the end from the data
-    (§7 layer 3) — an unknown is not a zero.
+    count, the request stands and the run discovers the end from the data — an unknown is not a zero.
     """
     pages_requested = max(1, int(pages_requested))
     if not pages_avail:
@@ -843,13 +842,13 @@ def pages_to_fetch(pages_requested: int, pages_avail: Optional[int]) -> int:
 # ---------------------------------------------------------------------------
 # Every marker below was counted on four pages this address is served
 # normally — the homepage, a category listing, a product page and a grid
-# fragment — and every one counted ZERO on all four (§18). The two that did
+# fragment — and every one counted ZERO on all four. The two that did
 # NOT count zero are `akamai` (1, 1, 1, 0) and `akamaihd` (1, 1, 1, 0), and
 # they are absent from this tuple for that reason: Montblanc's own
 # performance script references its CDN on every page it serves, so a bare
 # `akamai` marker reports a served catalogue as a block.
 #
-# `cf-turnstile` is absent on purpose. §8/§19: 2Captcha's own auto-solve
+# `cf-turnstile` is absent on purpose. 2Captcha's own auto-solve
 # extension injects it into every page it loads over `--cdp-endpoint`, so it
 # fires on good pages and has been measured MISSING from real challenges.
 # `challenges.cloudflare.com` is the one that works, and it is 0 on all four
@@ -879,14 +878,14 @@ BOT_CHALLENGE_MARKERS = (
 #
 # A block page, Chromium's own network-error page and an edge interstitial
 # all reference it ZERO times, which is what makes this a POSITIVE signal
-# rather than another marker list (§8, §18). The grid fragment's 24 is the
+# rather than another marker list. The grid fragment's 24 is the
 # number that matters: it is the smallest real response this site produces,
 # and the threshold has to sit below it.
 _ASSET_MARKER = "demandware.static"
 
 # How far into the document to normalise HTML entities before matching.
 #
-# §20: Akamai's refusal page reaches a parser spelled two different ways —
+# Akamai's refusal page reaches a parser spelled two different ways —
 # `errors&#46;edgesuite&#46;net` in the raw bytes an HTTP client receives,
 # and `errors.edgesuite.net` once a browser has parsed and re-serialised it.
 # A literal marker matches the browser engines and silently misses the HTTP
@@ -931,12 +930,12 @@ _MIN_ASSET_REFERENCES = 2
 
 # Distinct product URLs in the markup, however they are linked.
 #
-# This exists to tell a BROKEN PARSER apart from an EMPTY CATEGORY (§20). A
+# This exists to tell a BROKEN PARSER apart from an EMPTY CATEGORY. A
 # page that Montblanc served, that links to products, and that parses to zero
 # rows is OUR bug — but reported as "0 products" it sends the reader to check
 # the URL instead of the parser, which is the wrong half of the system.
 #
-# §20 also says to check the signal CAN fire before adding it. It can here:
+# Also check the signal CAN fire before adding it. It can here:
 # the tile fallback needs a `data-pid` element AND a product href, so a page
 # whose grid markup changed shape while its links survived yields links > 0
 # and rows == 0. (On a site whose fallback emitted a row per link, this could
@@ -959,10 +958,11 @@ def detect_page_state(html: str, status: Optional[int] = None,
         empty     a real page with no products on it       -> EXIT_NO_PRODUCTS
         captcha   a challenge widget                       -> solve, then retry
         blocked   the edge refused                         -> rotate the exit
+        not_found the site says the address does not exist -> stop, exit 5
         unknown   none of the above                        -> retry
 
     THE SIGNALS ARE ORDERED BY HOW MUCH THEY PROVE, not by how cheap they
-    are (§17's classification-order trap). An unambiguous positive — the
+    are (the classification-order trap). An unambiguous positive — the
     site's own structured data, or its own "no results" copy — is read
     BEFORE the asset-reference heuristic, so a minimal but real page cannot
     be reported as blocked.
@@ -982,7 +982,7 @@ def detect_page_state(html: str, status: Optional[int] = None,
 
     # 1b. The same question asked of a page kind that publishes no JSON-LD.
     #
-    #     §18: which page kind server-renders its grid decides what "unknown"
+    #     Which page kind server-renders its grid decides what "unknown"
     #     means, and on this site the two kinds disagree. A full listing page
     #     carries an ItemList; the `Search-UpdateGrid` fragment its own front
     #     end calls carries ZERO JSON-LD blocks and 24 product tiles. Judged
@@ -992,10 +992,25 @@ def detect_page_state(html: str, status: Optional[int] = None,
     #     `data-pid` is the site's own id attribute, so a document carrying
     #     one is a document with a product in it. This is still an
     #     unambiguous positive and it belongs here, ABOVE the reference-count
-    #     heuristic, per §17: order the signals by how much they prove, not
+    #     heuristic: order the signals by how much they prove, not
     #     by how cheap they are.
     if _TILE_ID_RE.search(text):
         return "content", None
+
+    # 1c. The site saying the address does not exist. Read after the
+    #     content signals (a page with the site's own product data on it is
+    #     content whatever else it says) and before everything else, so a
+    #     mistyped URL is not reported as an empty catalogue. The status is
+    #     the primary signal; the error page's own structure covers a driver
+    #     that exposes no status (Selenium). Measured 2026-10-15 on
+    #     en-us, de-de, fr-fr and ja-jp: HTTP 404, ~5.5 KB, a translated
+    #     title, and in every locale `class="error-system_info"` plus the
+    #     page's own `/errorpage.html` script reference — on none of three
+    #     served listing pages.
+    if status in (404, 410):
+        return "not_found", f"http {status}"
+    if _NOT_FOUND_PAGE_RE.search(text) and _ERRORPAGE_REF_RE.search(text):
+        return "not_found", "the site's own error page"
 
     # 2. A status the edge owns. 403/429 are refusals; 5xx is the site.
     if status is not None:
@@ -1025,6 +1040,10 @@ def detect_page_state(html: str, status: Optional[int] = None,
 # ---------------------------------------------------------------------------
 # JSON-LD
 # ---------------------------------------------------------------------------
+# The site's own "page not found" document (see detect_page_state, step 1c).
+_NOT_FOUND_PAGE_RE = re.compile(r'class="error-system_info"')
+_ERRORPAGE_REF_RE = re.compile(r"/[a-z]{2}-[a-z]{2}/errorpage\.html")
+
 # The site's own product-id attribute. Used as a positive content signal for
 # the page kinds that publish no JSON-LD — see detect_page_state.
 _TILE_ID_RE = re.compile(r'data-pid="(?:MB)?\d', re.I)
@@ -1070,7 +1089,7 @@ def ld_blocks(html_or_soup) -> List[dict]:
 def _ld_offer(node: dict) -> dict:
     """The offer dict out of any legal `offers` shape.
 
-    §4's table, all four rows:
+    The table, all four rows:
       * `"offers": null` is an EXPLICIT null, so a `.get()` default does not
         apply and a naive `.get("offers", {})` returns None and raises.
       * a list, possibly holding non-dicts.
@@ -1112,7 +1131,7 @@ def _ld_image(value: Any) -> Optional[str]:
 
 # Availability is mapped as an ALLOWLIST, not as `!= OutOfStock`, so a value
 # schema.org adds later reads as "unknown" rather than silently as "in
-# stock" (§20).
+# stock".
 _IN_STOCK_VALUES = {"instock", "in_stock", "onlineonly", "limitedavailability",
                     "presale", "preorder", "backorder"}
 _OUT_OF_STOCK_VALUES = {"outofstock", "soldout", "discontinued"}
@@ -1149,8 +1168,8 @@ def _item_list_products(blocks: Sequence[dict]) -> List[dict]:
 
     Handles `itemListElement` holding either `ListItem` wrappers (what
     Montblanc publishes) or bare products (also legal), and reads `@graph`
-    as well — §4 lists "products inside @graph rather than itemListElement"
-    as a shape that returns zero products SILENTLY.
+    as well — "products inside @graph rather than itemListElement" is a
+    shape that returns zero products SILENTLY.
     """
     out: List[dict] = []
     queue = list(blocks)
@@ -1204,9 +1223,9 @@ def _standalone_product(blocks: Sequence[dict]) -> Optional[dict]:
     `ProductGroup` and returned ZERO ROWS for every one of those 14 — while
     the repo's own canary stayed green, because the URL it pins
     (a 16-variant Meisterstück) happens to be the minority shape. A fixture
-    that picks the lucky case is a guard that cannot fail (§21).
+    that picks the lucky case is a guard that cannot fail.
 
-    §20's lesson was "a DETAIL page may publish a different type than the
+    The lesson was "a DETAIL page may publish a different type than the
     listing". The correction this cost: a detail page may publish **two
     different types depending on the product**, so counting the blocks on one
     captured page answers for that page and not for the route.
@@ -1321,7 +1340,7 @@ def _tile_nodes(soup) -> Dict[str, Any]:
     """{sku: tile_element} for every product tile in the document.
 
     The tile is found by `data-pid`, which is the site's own id attribute and
-    therefore immune to the class-name churn §4 warns about. No ancestor walk
+    therefore immune to class-name churn. No ancestor walk
     is needed and none is done: `div.product[data-pid]` already covers
     exactly one product, so the "junk-link data theft" failure mode — a scope
     that widens one level too far and reports a neighbour's price — cannot
@@ -1438,7 +1457,7 @@ def _join_tile(key: Optional[str], by_sku: Dict[str, Any],
     The base join is applied ONLY when exactly one tile on the page shares
     that base. Where two do, the page is showing two variants of one product
     and picking either would be a guess — so the row keeps the JSON-LD's own
-    answer and the tile columns stay None, which is the honest result (§8).
+    answer and the tile columns stay None, which is the honest result.
     """
     if not key:
         return None
@@ -1536,7 +1555,7 @@ def parse_products(html: str, base_url: str = "", *, page: int = 1,
 
     JSON-LD first, in the site's own order, with the tile joined on by sku.
     Returns [] on a detail page, and that is deliberate rather than a gap:
-    §20's trap is a listing parser silently returning zero on a page that
+    The trap is a listing parser silently returning zero on a page that
     publishes `ProductGroup`, so the smoke suite pins this exact behaviour
     and `parse_product_detail` is the entry point for that page kind.
     """
@@ -1555,7 +1574,7 @@ def parse_products(html: str, base_url: str = "", *, page: int = 1,
     # page: 17 recommendation tiles (ink bottles, refills, a pouch) plus the
     # product itself, returned as **18 products with prices**, in silence.
     #
-    # That is §4's junk-link data theft one level up: not a neighbour's price
+    # That is the junk-link data theft one level up: not a neighbour's price
     # on the right product, but a neighbour's products on the wrong page,
     # and nothing in the output says so. `parse_product_detail` is the entry
     # point for this page kind.
@@ -1594,7 +1613,7 @@ def parse_products(html: str, base_url: str = "", *, page: int = 1,
         return rows
 
     # The JSON-LD path found nothing. Fall back to the site's own id
-    # attribute — §4's "a better anchor than any class and nearly as good as
+    # attribute — "a better anchor than any class and nearly as good as
     # structured data" — before giving up, because a page that renders tiles
     # and publishes no ItemList is a real shape (the `Search-UpdateGrid`
     # fragment is exactly that: 24 tiles, 0 JSON-LD blocks).

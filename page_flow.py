@@ -2,7 +2,7 @@
 page_flow.py
 ------------
 The retry / solve / blocked decision, as DATA rather than as three copies of
-an if-chain (CLAUDE.md §1).
+an if-chain.
 
 Montblanc answers a request five ways, and four of them want a different
 response:
@@ -43,7 +43,7 @@ Two things follow, and the second is the one that saves an hour:
   * The three browser engines never see this. They send a real browser's UA,
     which is a browser-shaped string by definition.
   * On THIS site a timeout from an HTTP client is a BLOCK, not a slow
-    network. CLAUDE.md §8 says a proxy failure is not a timeout; this is the
+    network. A proxy failure is not a timeout; this is the
     same class one step further out, and it wants the opposite response from
     a real timeout. Retrying the identical request at the same exit cannot
     ever succeed, because nothing about the address is what was rejected.
@@ -53,7 +53,7 @@ Nothing here imports a browser, and **no JavaScript crosses this boundary**:
 Selenium's `execute_script` takes a function BODY with an explicit `return`
 while Playwright and pyppeteer take `() => expr`, so a shared snippet would
 quietly acquire one driver's dialect. The callbacks below are named for the
-OPERATION instead, and each engine spells it in its own dialect (§1).
+OPERATION instead, and each engine spells it in its own dialect.
 """
 
 import logging
@@ -74,7 +74,7 @@ log = logging.getLogger("page_flow")
 
 # How many product tiles mean "this listing has rendered".
 #
-# `> 1` on purpose, per CLAUDE.md §5: waiting for ONE match resolves on
+# `> 1` on purpose: waiting for ONE match resolves on
 # something unrelated long before the grid is really there. Montblanc serves
 # a default page size of 24 and every captured listing carried 24 tiles
 # (49 `data-pid` attributes, since the wishlist form repeats the id), so four
@@ -83,7 +83,7 @@ MIN_CARD_MATCHES = 4
 
 # A listing page's readiness anchor.
 #
-# `data-pid` is the site's OWN id attribute, which §4 calls a better anchor
+# `data-pid` is the site's OWN id attribute, which is a better anchor
 # than any class and nearly as good as structured data. The alternative on
 # this site is `.product-tile`, and that one is measurably worse: it counts
 # 49 on a listing and **111 on a product page**, because a detail page
@@ -116,7 +116,7 @@ def content_timeout_ms(mode: str) -> int:
 #
 # Polled through `count(selector)` — a callback each engine implements with
 # its own `querySelectorAll` call — and NEVER by handing the browser a string
-# to evaluate. CLAUDE.md §18: a site whose Content-Security-Policy omits
+# to evaluate. A site whose Content-Security-Policy omits
 # `unsafe-eval` kills `wait_for_function` with an `EvalError` and takes the
 # run down with exit 1, on the site's most obvious URL. Montblanc has not
 # been measured for that, and the cheap habit costs nothing on a site that
@@ -155,7 +155,7 @@ def classify(html: Optional[str], status: Optional[int] = None,
     url=...)` in two of three engines against a callee that took `status`
     second, and both crashed on their first fetch — invisible to import,
     `--help`, `compileall` and 400+ green offline assertions, because none of
-    those calls a function the way a live run does (§17). `smoke_test.py`
+    those calls a function the way a live run does. `smoke_test.py`
     binds every engine's call against this signature for that reason.
     """
     return detect_page_state(html or "", status, url)[0]
@@ -180,7 +180,7 @@ def classify_with_reason(html: Optional[str], status: Optional[int] = None,
 # name and Chromium puts it in the message.
 #
 # Chromium's proxy errors are listed separately below and deliberately NOT
-# folded in here: §8 says a proxy failure is not a timeout and the two want
+# folded in here: a proxy failure is not a timeout and the two want
 # opposite responses — a timeout deserves another try at the same exit, a
 # dead proxy a different one.
 _TRANSPORT_REFUSAL_RE = re.compile(
@@ -196,7 +196,7 @@ _TRANSPORT_REFUSAL_RE = re.compile(
     re.I)
 
 # Chromium's own names for "the proxy is dead", which is a different fault
-# with a different remedy (§8). Kept apart so the caller can rotate rather
+# with a different remedy. Kept apart so the caller can rotate rather
 # than retry.
 _PROXY_FAILURE_RE = re.compile(
     r"ERR_PROXY_CONNECTION_FAILED"
@@ -238,7 +238,7 @@ def classify_transport_error(exc: BaseException) -> str:
 
 
 # A User-Agent this site serves. Used ONLY to sanity-check an HTTP client's
-# header before it is sent, never to overwrite a browser's own — §8: the user
+# header before it is sent, never to overwrite a browser's own — the user
 # agent comes from the browser, not a literal, and a hardcoded version drifts
 # from whatever Chromium is installed.
 #
@@ -261,7 +261,7 @@ def ua_will_be_refused(user_agent: Optional[str]) -> bool:
 
 
 # How many product links a SERVED page must carry before "we parsed nothing"
-# is reported as OUR failure rather than as an empty category (§20).
+# is reported as OUR failure rather than as an empty category.
 #
 # Two rather than one: a single stray product link can appear in a nav
 # flyout or a "recently viewed" strip on a page that genuinely lists no
@@ -275,9 +275,9 @@ def looks_like_a_parse_failure(state: str, rows: int, link_count: int) -> bool:
 
     That combination is this repo's bug, not the site's, and it deserves to
     say so by name — "0 products" sends the reader to check the URL when the
-    thing to check is the parser. Deliberately NOT a new exit code: the
-    catalogue question really was answered, so it stays EXIT_NO_PRODUCTS and
-    only the `stop_reason` differs (§20).
+    thing to check is the parser. Deliberately NOT a new exit code: the run is
+    not complete, so finish_run reports exit 5 when nothing was gathered and
+    exit 6 when other pages produced rows.
     """
     if rows:
         return False
@@ -304,6 +304,10 @@ STATE_POLICY = {
     # for a solver. A fresh browser from a different exit clears it too,
     # which is why `retry` is also True.
     "captcha":   {"retry": True,  "solve": True,  "blocked": True,  "parse": False},
+    # The site said the address does not exist: HTTP 404/410, or its own
+    # error page. Terminal: the same URL gets the same answer, no exit or
+    # key changes it, and it is not an empty catalogue either.
+    "not_found": {"retry": False, "solve": False, "blocked": False, "parse": False},
     # Not recognisably a Montblanc page. A wait, not a spend.
     "unknown":   {"retry": True,  "solve": False, "blocked": False, "parse": False},
 }
@@ -330,7 +334,7 @@ def should_parse(state: str) -> bool:
 # True here, and CONSULTED rather than merely documented — the engines read
 # it, so setting it False really does stop the retry loop. (A sibling repo
 # carried this constant with a paragraph of justification and no reader,
-# which is the same defect as dead code that looks load-bearing: §17.)
+# which is the same defect as dead code that looks load-bearing.)
 #
 # True because on Montblanc a re-fetch genuinely can change the answer: what
 # the edge scores is the address and the request's headers, and a rotation
@@ -360,7 +364,7 @@ SOLVES_PER_PAGE = 1
 def pagination_is_addressable(url: str) -> bool:
     """Whether page N of this listing can be fetched without walking to it.
 
-    This is the question CLAUDE.md §18 says to ask PER URL rather than per
+    This question has to be asked PER URL rather than per
     site, because a sibling repo has one page kind that paginates by address
     and one that does not — and a `page_url()` used unconditionally there
     reported a COMPLETE run holding page 1.
@@ -387,12 +391,12 @@ def pages_to_plan(pages_requested: int, pages_avail: Optional[int]) -> int:
 
     Montblanc prints its own `result-count` above the grid, so the number of
     pages is known from page 1 rather than discovered by walking off the end
-    (§7 layer 2, with the site doing the arithmetic).
+    (pagination layer 2, with the site doing the arithmetic).
 
     There is NO site-imposed ceiling to clamp against — unlike bbb-scraper,
     where the same function has to cap at 15 — so a request is limited only
     by what the category actually holds. Where page 1 stated no count, the
-    request stands and the run discovers the end from the data (§7 layer 3):
+    request stands and the run discovers the end from the data:
     an unknown is not a zero.
     """
     requested = max(1, int(pages_requested))
@@ -412,6 +416,6 @@ def concurrency_limit(cdp_endpoint: Optional[str]) -> Optional[int]:
 
     The Scraping Browser API allows ONE live connection per profile, so N
     workers sharing a `pid` collide with `profile_locked`. Several `pid`s,
-    one run each, is the way to parallelise that path (§7).
+    one run each, is the way to parallelise that path.
     """
     return 1 if cdp_endpoint else None

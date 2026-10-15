@@ -3,7 +3,7 @@
 smoke_test.py — the offline suite for montblanc-scraper.
 
 One file of plain functions with inline fixtures. No pytest, no conftest, no
-fixtures directory (CLAUDE.md §10); `tests/test_smoke.py` wraps this as a
+fixtures directory; `tests/test_smoke.py` wraps this as a
 single pytest test so `pytest` works as an entry point without a second copy
 of the checks.
 
@@ -20,7 +20,7 @@ The fixtures
 ------------
 Every one is cut from a real capture taken 2026-09-17 and trimmed to the
 parts the parser reads. Each was verified to parse to IDENTICAL values to
-its untrimmed original before being committed (§15 step 3) — the trimming
+its untrimmed original before being committed — the trimming
 script asserts field-by-field equality on every row, not merely that the row
 count matched.
 
@@ -39,7 +39,7 @@ count matched.
                          carries `<title>www.montblanc.com</title>` — the
                          site's own hostname — and no vendor marker at all,
                          which is why positive-asset detection is the only
-                         thing that classifies it correctly (§18).
+                         thing that classifies it correctly.
 
 No personal data appears in any of them: Montblanc publishes products, not
 people, and none of the captures carries a name, a review or a session token.
@@ -114,7 +114,7 @@ CHROMIUM_ERROR_HTML = "<html><head><title>www.montblanc.com</title></head><body>
 # ---------------------------------------------------------------------------
 # The parser, asserted on VALUES rather than on coverage
 # ---------------------------------------------------------------------------
-# A column can be 100% populated and entirely wrong (CLAUDE.md §10), so every
+# A column can be 100% populated and entirely wrong, so every
 # check below pins a figure from the real capture rather than counting
 # non-nulls.
 
@@ -210,7 +210,7 @@ def check_unknown_availability_is_none_not_true():
 
 
 def check_a_detail_page_is_not_a_listing():
-    """CLAUDE.md §20, stated as the failure rather than guarded against.
+    """The detail-page trap, stated as the failure rather than guarded against.
 
     A product page publishes `ProductGroup` and no `ItemList`, so the listing
     parser finds no structured data — and its tile fallback would then return
@@ -221,7 +221,7 @@ def check_a_detail_page_is_not_a_listing():
     from product_parser import parse_products, parse_product_detail
 
     # The fixture CARRIES a recommendation tile, which is what makes this
-    # check able to fail (§21: a guard is only as good as the fixture it runs
+    # check able to fail (a guard is only as good as the fixture it runs
     # against). Controlled by disabling the guard: without the carousel in
     # the fixture the check stayed GREEN with the fault planted and proved
     # nothing.
@@ -235,7 +235,7 @@ def check_a_detail_page_is_not_a_listing():
           len(stealable) >= 2,
           "without them the next check passes for the wrong reason — "
           "controlled by disabling both guards, and it stayed green until "
-          "this fixture carried a real carousel (§21)")
+          "this fixture carried a real carousel")
     check("detail: and they are NOT the product itself",
           all(r.sku != "MB132460" for r in stealable),
           [r.sku for r in stealable])
@@ -263,7 +263,7 @@ def check_product_detail_is_one_row_per_variant():
 
 
 def check_a_variant_url_is_its_own_not_the_groups():
-    """§4's `offers.url` trap, inverted — and it is the quiet kind.
+    """The `offers.url` trap, inverted — and it is the quiet kind.
 
     On this site EVERY variant's `offers.url` is the GROUP's page, while its
     own `url` is the variant's. Reading `offers.url` makes all sixteen rows
@@ -330,7 +330,7 @@ def check_the_tile_join_survives_a_different_variant_suffix():
 
     # AMBIGUITY IS REFUSED. Two variants of one product on one page means
     # picking either would be a guess, so the row keeps the JSON-LD's answer
-    # and the tile columns stay None (§8).
+    # and the tile columns stay None.
     two = {"MB132288VG": "first", "MB132288XX": "second"}
     equal("join: two tiles sharing a base are not guessed between",
           _join_tile("MB132288M", two, _by_base(two)), None)
@@ -349,7 +349,7 @@ def check_the_range_rows_still_get_their_tile_columns():
 def check_a_tiles_only_page_still_parses():
     """The `Search-UpdateGrid` fragment: 24 tiles, ZERO JSON-LD blocks.
 
-    §18: which page kind server-renders its grid decides what "unknown"
+    Which page kind server-renders its grid decides what "unknown"
     means, and on this site the two listing kinds disagree. A parser that
     only reads structured data returns nothing here and calls a served page
     empty.
@@ -385,7 +385,7 @@ SINGLE_PRODUCT_URL = ("https://www.montblanc.com/en-us/"
 def check_a_product_with_no_variants_still_parses():
     """The common detail shape, and the one that returned NOTHING.
 
-    §20 taught "a DETAIL page may publish a different JSON-LD type than the
+    Experience taught "a DETAIL page may publish a different JSON-LD type than the
     listing", and this repo handled `ProductGroup` on that basis. The
     correction a third-party audit found: a detail page publishes a
     different type **depending on the product**. A product with no variants
@@ -398,7 +398,7 @@ def check_a_product_with_no_variants_still_parses():
 
     It stayed invisible because both captured product pages happened to be
     variant groups, and because the canary pinned a 16-variant Meisterstück:
-    a fixture that picks the lucky case is a guard that cannot fail (§21).
+    a fixture that picks the lucky case is a guard that cannot fail.
     """
     from product_parser import parse_product_detail, ld_blocks
 
@@ -421,7 +421,7 @@ def check_a_product_with_no_variants_still_parses():
     equal("single: variant_of is None", row.variant_of, None)
     equal("single: mode", row.mode, "product")
 
-    # The §20 guard must still hold in BOTH directions after the widening:
+    # The detail-page guard must still hold in BOTH directions after the widening:
     # a standalone Product is top-level, while a listing nests its products
     # inside itemListElement, so this must not start eating listings.
     from product_parser import parse_products
@@ -481,7 +481,7 @@ def check_a_parse_failure_is_not_ok_on_ANY_page():
 
 
 def check_one_solve_budget_covers_every_purchase():
-    """§17's "a policy constant nothing reads", with a bill attached.
+    """The familiar "a policy constant nothing reads", with a bill attached.
 
     `handle_captcha_if_present` runs twice per attempt and only the SECOND
     call was counted, so the uncounted one repeated on every block-retry.
@@ -498,7 +498,7 @@ def check_one_solve_budget_covers_every_purchase():
     # reached only the Playwright engine passed locally with 463 green
     # checks and failed in `engine-smoke`, which installs each driver. The
     # loudest thing the check could say was the one case it stayed silent
-    # about (§22).
+    # about.
     for module in ENGINES:
         path = os.path.join(HERE, module + ".py")
         if not os.path.exists(path):
@@ -550,7 +550,7 @@ def check_retries_must_mean_at_least_one_attempt():
     # The first version of this check searched the source for the error
     # string. Controlled by disabling the guard but leaving the string in
     # place, it stayed GREEN — it was testing that a sentence exists, not
-    # that a value is refused (§22).
+    # that a value is refused.
     for module in ENGINES:
         engine = _import_engine(module)
         if engine is None:
@@ -588,7 +588,7 @@ def check_diff_refuses_a_run_it_cannot_vouch_for():
     found — so it was silently disabled for exactly the files that cannot
     prove they are complete. Two sidecar-less runs diffed clean with exit 0.
 
-    A failed run writes no sidecar ON PURPOSE (§8), so "no sidecar" is a
+    A failed run writes no sidecar ON PURPOSE, so "no sidecar" is a
     state this repo produces deliberately and the one it must not read as
     "probably fine".
     """
@@ -700,7 +700,7 @@ US_RESULT_COUNT_HTML = (
 
 
 def check_the_result_count_survives_a_localised_noun():
-    """§15's second-country rule, catching a real bug.
+    """The second-country rule, catching a real bug.
 
     The noun beside the number is localised and the number is not. The first
     version of this parser matched a LIST of nouns — Results, Ergebnisse,
@@ -900,7 +900,7 @@ def check_prices_in_every_convention_the_site_uses():
 
     # A bare dollar sign cannot name itself: Montblanc sells in CAD, AUD,
     # NZD, SGD, HKD and TWD too. Without a market to resolve it, the currency
-    # is None rather than a plausible "USD" (§4's ladder, rung 4 vs 5).
+    # is None rather than a plausible "USD" (the ladder, rung 4 vs 5).
     equal("price: a bare $ with no market resolves to nothing",
           _prices_in("$1,990.00")[1], None)
     equal("price: with a market it resolves to that market",
@@ -913,7 +913,7 @@ def check_prices_in_every_convention_the_site_uses():
 
 
 def check_fixtures_carry_no_session_material():
-    """§10: a real page dump carries the session that fetched it.
+    """A real page dump carries the session that fetched it.
 
     A sibling repo committed three `sessionId` values, their CSRF tokens and
     a real customer's display name, profile permalink and review text. None
@@ -923,7 +923,7 @@ def check_fixtures_carry_no_session_material():
     Montblanc is the easy case: it publishes products, not people, and no
     capture here carries a name, a review or a login. So this guards the
     SHAPE rather than any literal, which is the half that keeps working when
-    the next capture is taken (§10: guard with PATTERNS, not the old
+    the next capture is taken (guard with PATTERNS, not the old
     values).
     """
     fixtures = {
@@ -963,10 +963,10 @@ SERVED_BUT_UNPARSEABLE_HTML = (
 
 
 def check_a_broken_parser_is_not_reported_as_an_empty_category():
-    """§20: a served page that links to N products and parses to zero is OUR
+    """A served page that links to N products and parses to zero is OUR
     bug, and saying "0 products" sends the reader to check the URL instead.
 
-    §20 also says to check the signal CAN fire before adding it — if the
+    Also check the signal CAN fire before adding it — if the
     fallback emitted a row per product link it never could. Here it cannot:
     the tile path needs a `data-pid` element as well as a href, so markup
     that loses its tiles while keeping its links lands exactly here.
@@ -999,7 +999,7 @@ def check_a_broken_parser_is_not_reported_as_an_empty_category():
 
 
 def check_parser_found_nothing_is_not_a_complete_run():
-    """The stop_reason must not read as success (§8: blocked != empty)."""
+    """The stop_reason must not read as success (blocked != empty)."""
     from output_writer import COMPLETE_STOP_REASONS, run_meta
     check("parse-failure: 'parser_found_nothing' is NOT a complete stop reason",
           "parser_found_nothing" not in COMPLETE_STOP_REASONS,
@@ -1050,7 +1050,7 @@ def check_page_states_on_real_captures():
     equal("state: an empty body is unknown",
           detect_page_state("", None, "")[0], "unknown")
 
-    # CHROMIUM'S OWN ERROR PAGE — the case inverted detection is for (§18).
+    # CHROMIUM'S OWN ERROR PAGE — the case inverted detection is for.
     # It carries the SITE'S OWN HOSTNAME in the title, so a title check calls
     # it a real page, and no vendor marker of any kind. Only "was this built
     # out of Montblanc's own assets?" answers correctly.
@@ -1061,12 +1061,12 @@ def check_page_states_on_real_captures():
 
 
 def check_markers_do_not_match_a_page_montblanc_serves():
-    """§18: count every candidate on a page you KNOW is good, first.
+    """Count every candidate on a page you KNOW is good, first.
 
     This is the check that changed the marker set. Montblanc is Akamai-
     fronted and references `akamaihd.net` on every page it serves, so a bare
     `akamai` marker reports a served catalogue as a block — the exact
-    tokopedia-scraper failure that put the rule in CLAUDE.md.
+    tokopedia-scraper failure that taught the rule.
     """
     from product_parser import BOT_CHALLENGE_MARKERS, detect_bot_challenge
 
@@ -1081,7 +1081,7 @@ def check_markers_do_not_match_a_page_montblanc_serves():
     lowered = [m.lower() for m in BOT_CHALLENGE_MARKERS]
     check("markers: bare 'akamai' is not a marker (it is on every good page)",
           "akamai" not in lowered and "akamaihd" not in lowered, lowered)
-    check("markers: cf-turnstile is not a marker (§8/§19: the Scraping "
+    check("markers: cf-turnstile is not a marker (the Scraping "
           "Browser's own extension injects it)",
           "cf-turnstile" not in lowered, lowered)
     check("markers: challenges.cloudflare.com is the one kept instead",
@@ -1102,7 +1102,7 @@ def check_bot_manager_cookies_are_not_markers():
 
       * they must not become markers. They are on every GOOD response, so
         matching them would report a served catalogue as blocked — the same
-        mistake `akamai` itself would be (§18).
+        mistake `akamai` itself would be.
       * and the fact they exist must not be forgotten. `_abck` came back
         `~-1~` on every fetch, meaning no challenge issued — so the honest
         claim is "it did not challenge us", not "there is nothing here".
@@ -1127,7 +1127,7 @@ def check_bot_manager_cookies_are_not_markers():
 
 
 def check_a_marker_survives_both_encodings():
-    """§20: the same refusal page reaches a parser spelled two ways.
+    """The same refusal page reaches a parser spelled two ways.
 
     An edge entity-escapes the punctuation; a browser parses it and
     serialises it back out plain. A literal marker matches the browser
@@ -1143,7 +1143,7 @@ def check_a_marker_survives_both_encodings():
     # no `Reference&#32;#`, which is itself a listed marker and would match
     # without any unescaping at all. Controlled by removing the unescape
     # step: with the richer fixture the check stayed GREEN, passing for the
-    # wrong reason (§21). This is the fixture that actually exercises it.
+    # wrong reason. This is the fixture that actually exercises it.
     check("encodings: the fixture does not contain a marker verbatim",
           not any(m.lower() in escaped.lower() for m in BOT_CHALLENGE_MARKERS),
           "the escaped fixture matches a marker without unescaping, so the "
@@ -1187,7 +1187,7 @@ def check_the_transport_refusal_is_classified():
           page_flow.classify_transport_error(
               Exception("curl: (92) HTTP/2 stream 1 was not closed cleanly: "
                         "INTERNAL_ERROR (err 2)")), "refused")
-    # A DEAD PROXY IS NOT A TIMEOUT (§8): the two want opposite responses, so
+    # A DEAD PROXY IS NOT A TIMEOUT: the two want opposite responses, so
     # they must not collapse into one name.
     equal("transport: a dead proxy is its own thing",
           page_flow.classify_transport_error(
@@ -1259,7 +1259,7 @@ def check_pagination_is_planned_from_the_sites_own_number():
           page_flow.pages_to_plan(50, 12), 12)
     equal("plan: a smaller request is honoured", page_flow.pages_to_plan(3, 12), 3)
     # An unknown count is not a zero: where page 1 stated nothing, the run
-    # discovers the end from the data (§7 layer 3).
+    # discovers the end from the data.
     equal("plan: unknown means the request stands",
           page_flow.pages_to_plan(5, None), 5)
     equal("plan: never less than one page", page_flow.pages_to_plan(0, 12), 1)
@@ -1268,7 +1268,7 @@ def check_pagination_is_planned_from_the_sites_own_number():
 
 
 def check_policy_constants_have_a_consumer():
-    """§17: a policy constant nothing reads is the same defect as dead code.
+    """A policy constant nothing reads is the same defect as dead code.
 
     `RETRY_ON_BLOCKED` carried a paragraph of measured justification in a
     sibling repo and NO engine consulted it, so setting it False changed
@@ -1292,7 +1292,7 @@ def check_policy_constants_have_a_consumer():
 def check_row_schema():
     from output_writer import Product, ROW_CLASS_BY_MODE, UNIQUE_BY_SKU_MODES
     names = [f.name for f in fields(Product)]
-    equal("the family prefix is byte-identical and in order (§9)",
+    equal("the family prefix is byte-identical and in order",
           names[:5], ["source", "scraped_at", "url", "sku", "title"])
 
     # The commerce columns this site DOES have. Montblanc is a shop, so the
@@ -1302,7 +1302,7 @@ def check_row_schema():
         check("the commerce column %r is present" % present, present in names)
 
     # And the ones measured ABSENT, each with its count in output_writer's
-    # docstring. §9 says removing a column needs the measurement written
+    # docstring. Removing a column needs the measurement written
     # down; this pins that they stay removed until someone re-measures.
     for gone in ("original_price", "discount_pct", "lowest_price_30d",
                  "rating", "review_count", "ean", "gtin", "engraved"):
@@ -1310,7 +1310,7 @@ def check_row_schema():
               gone not in names,
               "if this is back, output_writer's measurement should be too")
 
-    # Site-specific columns go at the END of the row (§9), after the family's.
+    # Site-specific columns go at the END of the row, after the family's.
     equal("site-specific columns come last",
           names[-9:], ["locale", "base_sku", "collection", "sub_collection",
                        "color", "size", "special_edition", "variant_of", "sort"])
@@ -1385,7 +1385,7 @@ def check_a_run_that_finds_nothing_writes_nothing():
         code = save([], prefix, "json", allow_empty=True)
         equal("--allow-empty WRITES the empty file...", 
               json.load(open(prefix + ".json", encoding="utf-8")), [])
-        # ...and still reports exit 4. Pinned deliberately (§10: pin a known
+        # ...and still reports exit 4. Pinned deliberately (pin a known
         # behaviour rather than half-guarding it): "zero businesses" is true
         # whether or not the file was written, and a caller that wanted the
         # file still wants to know the result was empty.
@@ -1434,7 +1434,7 @@ def check_sidecar_shape():
 
 
 # ---------------------------------------------------------------------------
-# The engines — the five checks CLAUDE.md §17 says to steal
+# The engines — the cross-engine checks
 # ---------------------------------------------------------------------------
 
 ENGINES = ("playwright_scraper", "selenium_scraper", "puppeteer_scraper")
@@ -1481,7 +1481,7 @@ def check_engines_import_their_driver_at_module_level():
 
 
 def check_shared_calls_bind_against_the_real_signature():
-    """§17's check #1, and the one that earns its keep.
+    """Cross-engine check #1, and the one that earns its keep.
 
     A sibling repo shipped `classify(html, url=…)` in two of three engines
     against a callee taking `status` second, and BOTH crashed on their first
@@ -1597,7 +1597,7 @@ def _argparse_flags(module_name):
     return flags
 
 
-# The family's flag contract (CLAUDE.md §9), plus this repo's own additions.
+# The family's flag contract, plus this repo's own additions.
 CONTRACT_FLAGS = {
     "--url", "--pages", "--category", "--format", "--out", "--delay",
     "--retries", "--retry-delay", "--concurrency", "--proxy", "--proxy-file",
@@ -1605,12 +1605,12 @@ CONTRACT_FLAGS = {
     "--twocaptcha-key", "--captcha-api", "--solve-captcha", "--min-score",
     "--cdp-endpoint", "--allow-empty", "--dump-html",
 }
-# The five flags CLAUDE.md §9 omitted for months while nearly every repo in
+# The five flags the written contract omitted for months while nearly every repo in
 # the family shipped them, plus this site's own additions.
 #
 # `--fingerprint`, `--fp-tags`, `--fp-country` and `--mode` are in 17 of the
 # 18 repos counted; `--locale` is in 16. Re-derive rather than trusting this
-# comment (§13):
+# comment:
 #
 #   grep -ohE '"--[a-z0-9-]+"' */playwright_scraper.py | sort | uniq -c | sort -rn
 FAMILY_FLAGS = {"--fingerprint", "--fp-tags", "--fp-country", "--locale",
@@ -1624,7 +1624,7 @@ SITE_FLAGS = {"--sort", "--query", "--page-size"}
 
 
 def check_engine_flag_sets():
-    """§17's check #2: against the contract AND against each other, both ways.
+    """Cross-engine check #2: against the contract AND against each other, both ways.
 
     A missing flag fails; so does closing a difference the README documents.
     """
@@ -1641,7 +1641,7 @@ def check_engine_flag_sets():
     # and could not launch it on the development machine, so it needs a way
     # to point at another one. Its twins have no equivalent because they do
     # not ship a browser. Listed here so that closing the difference — or
-    # growing a second one — fails the build (§17).
+    # growing a second one — fails the build.
     DOCUMENTED_DIFFERENCES = {"puppeteer_scraper": {"--chromium-path"}}
     names = sorted(sets)
     for i in range(len(names) - 1):
@@ -1660,7 +1660,7 @@ BANNED_FLAGS = ("--antidetect", "--country-code")
 def check_banned_and_removed_flags():
     """Scoped to the ENGINES.
 
-    `--country` is absent here — the flag CLAUDE.md §10 bans outright — and
+    `--country` is absent here — the flag this family bans outright — and
     `--locale` takes its place, because on Montblanc the market really is a
     property of the URL rather than of the browser.
 
@@ -1681,7 +1681,7 @@ def check_banned_and_removed_flags():
                   '"%s"' % flag not in source)
         check("%s does not define the banned --country" % module,
               '"--country"' not in source,
-              "§10 bans it: it could disagree with the URL")
+              "it is banned: it could disagree with the URL")
         check("%s refuses --locale alongside --url" % module,
               "--url already carries its locale" in source,
               "the refusal that keeps --locale from contradicting the URL "
@@ -1689,7 +1689,7 @@ def check_banned_and_removed_flags():
 
 
 def check_undefined_names_in_every_module():
-    """§10: compileall proves a file PARSES, not that its names RESOLVE.
+    """`compileall` proves a file PARSES, not that its names RESOLVE.
 
     A live run of a sibling repo's pyppeteer engine died with NameError on a
     line reached only while fetching, after an import had been removed — the
@@ -1747,7 +1747,7 @@ def _import_graph(entrypoint):
 
 
 def check_dockerfile_copies_everything_the_entrypoint_imports():
-    """§10: all three repos in this family shipped an image that died with
+    """All three repos in this family shipped an image that died with
     ModuleNotFoundError on every invocation, --help included, because
     proxy_pool.py was missing from the COPY list. CI never built the image;
     this check needs no Docker."""
@@ -1795,7 +1795,7 @@ def check_env_example_documents_exactly_what_the_loader_reads():
 
 
 def check_a_copied_env_example_reads_as_UNSET():
-    """§17: `cp .env.example .env` followed by a run must not connect.
+    """`cp .env.example .env` followed by a run must not connect.
 
     The placeholder check was a literal set in a sibling repo, and the two
     credentialled URLs are documented the way the vendor documents them —
@@ -1810,15 +1810,17 @@ def check_a_copied_env_example_reads_as_UNSET():
         return
     text = open(example, encoding="utf-8").read()
     values = dict(re.findall(r"^([A-Z][A-Z0-9_]+)=(.*)$", text, re.M))
-    check("the example actually sets every variable",
-          set(values) == set(env_config.ENV_KEYS),
-          "example has %s, loader reads %s"
-          % (sorted(values), sorted(env_config.ENV_KEYS)))
-    # Every CREDENTIAL must read as unset. The default TARGET must not: it is
-    # a real, usable URL, and blanking it would remove the one setting this
-    # file exists to make convenient (§17's check #3 says exactly this — the
-    # credentials unset, the non-credential default still usable).
     CREDENTIALS = {"TWOCAPTCHA_KEY", "MONTBLANC_CDP_ENDPOINT", "MONTBLANC_PROXY"}
+    # The credentials ship as placeholders; the default TARGET ships
+    # COMMENTED OUT. Set, a copied example chose the user's target for them:
+    # it replaced the category --category asked for and refused --query and
+    # --locale. The commented line still documents it (checked above).
+    check("the example sets every credential as a placeholder",
+          set(values) == CREDENTIALS,
+          "example sets %s" % sorted(values))
+    check("MONTBLANC_URL ships commented out, not set",
+          "MONTBLANC_URL" not in values
+          and re.search(r"^#\s*MONTBLANC_URL=https://", text, re.M) is not None)
     before = dict(os.environ)
     try:
         for name, raw in values.items():
@@ -1848,7 +1850,7 @@ def check_a_copied_env_example_reads_as_UNSET():
 
 
 def check_credential_scan_is_one_implementation_invoked_from_both():
-    """§17: two sources of truth, one dead and one holed.
+    """Two sources of truth, one dead and one holed.
 
     `.github/ci_checks.py` sat in three repos invoked by NOTHING, while
     tests.yml carried an inline grep doing a narrower version of the same job
@@ -1878,7 +1880,7 @@ BANNED_WORDING = (
 
 
 def check_ci_calls_the_shared_checks_rather_than_restating_them():
-    """§17: one implementation, invoked from both — asserted, not assumed.
+    """One implementation, invoked from both — asserted, not assumed.
 
     This repo's FIRST CI run failed on exactly this. `tests.yml` carried
     INLINE reimplementations of the `--help` and sample-output checks that
@@ -1889,7 +1891,7 @@ def check_ci_calls_the_shared_checks_rather_than_restating_them():
     nothing in the repo could see the difference.
 
     The guard triggers on the whole `.github` directory being absent, never
-    on a file inside it being missing (§22): two suites in this family run
+    on a file inside it being missing: two suites in this family run
     INSIDE the Docker image, which deliberately COPYs no `.github/`, so a
     check that reads a workflow file is correct in the repo and red in the
     image. A check that quietly starts passing once its input disappears is
@@ -1932,7 +1934,7 @@ def check_ci_calls_the_shared_checks_rather_than_restating_them():
 
 
 def check_banned_wording():
-    """§12: enforced by this test rather than by review."""
+    """Enforced by this test rather than by review."""
     for root, dirs, files in os.walk(HERE):
         dirs[:] = [d for d in dirs if d not in
                    (".git", "__pycache__", ".pytest_cache", "node_modules")]
@@ -1950,7 +1952,7 @@ def check_banned_wording():
 
 
 def check_concurrency_with_the_browser_stubbed():
-    """§10: a live run cannot always reach this machinery.
+    """A live run cannot always reach this machinery.
 
     Page 1 is fetched alone and decides how many pages there are, so a
     blocked page 1 means the workers never start. Driven directly instead,
@@ -2096,7 +2098,7 @@ def check_worker_pools_start_on_different_exits():
 
 
 def check_fingerprint_kwargs_are_ones_the_driver_accepts():
-    """§10: an unknown key in new_context(**kwargs) is a TypeError at launch,
+    """An unknown key in new_context(**kwargs) is a TypeError at launch,
     on the PAID path, at runtime."""
     engine = _import_engine("playwright_scraper")
     if engine is None:
@@ -2146,7 +2148,7 @@ def check_every_engine_exposes_the_same_public_surface():
 
 
 def check_engines_do_not_evaluate_a_string_in_the_browser():
-    """§18: a site whose CSP omits `unsafe-eval` kills wait_for_function with
+    """A site whose CSP omits `unsafe-eval` kills wait_for_function with
     an EvalError and takes the run down with exit 1. Montblanc has not been
     measured for that, and the cheap habit costs nothing where it would have
     been allowed."""
@@ -2164,7 +2166,7 @@ def check_engines_do_not_evaluate_a_string_in_the_browser():
 
 
 def check_credentials_never_reach_a_log():
-    """§8: an EXCEPTION MESSAGE is a log, and the masker must be GLOBAL.
+    """An EXCEPTION MESSAGE is a log, and the masker must be GLOBAL.
 
     A Playwright connection error repeats the endpoint five times (the
     message plus a four-line call log), so a masker handling only the first
@@ -2215,7 +2217,7 @@ def check_sample_output_matches_the_schema():
 
 
 def check_readme_numbers_are_not_stale():
-    """§17's check #4: diff every numeric claim against what is on disk.
+    """Cross-engine check #4: diff every numeric claim against what is on disk.
 
     Only the figures that MUST hold are pinned: a number that legitimately
     varies between runs is written as a range in the README and not checked
@@ -2257,7 +2259,7 @@ def _tree_state():
 
 
 def check_no_test_mutates_the_working_tree():
-    """§10: one suite used its own file as a fake chromedriver and chmod'd it
+    """One suite used its own file as a fake chromedriver and chmod'd it
     to 755, leaving a mode change in git status.
 
     Compares the tree against how it looked when the suite STARTED, not
@@ -2275,7 +2277,7 @@ def check_no_test_mutates_the_working_tree():
 
 
 def check_captcha_capability_claims_match_the_code():
-    """§19: the most expensive bug this family can ship is a SENTENCE.
+    """The most expensive bug this family can ship is a SENTENCE.
 
     It fails in both directions and this family has shipped both:
 
@@ -2316,7 +2318,7 @@ def check_captcha_capability_claims_match_the_code():
     # rots the moment the site switches a bot manager on.
     #
     # So the claim has to be PAIRED with the thing that would retest it — the
-    # daily canary — rather than left as a sentence nobody re-measures (§13).
+    # daily canary — rather than left as a sentence nobody re-measures.
     claims_no_key = ("no, and it would be dishonest" in low
                      or "do i need a 2captcha account" in low)
     if claims_no_key:
@@ -2326,7 +2328,7 @@ def check_captcha_capability_claims_match_the_code():
               "daily canary is what turns it back into a measurement")
         check("...and dates the measurement it rests on",
               re.search(r"20\d\d-\d\d-\d\d", readme) is not None,
-              "§13: a number describing a living thing needs its moment")
+              "a number describing a living thing needs its moment")
 
     # And in the other direction: if the README names a task type, the solver
     # had better build it. A capability claim citing no task type is a guess
@@ -2461,6 +2463,555 @@ def check_scraper_api_payload_and_status():
           "got %r" % (captured.get("waitFor"),))
     check("scraper API: the target status comes from http_code (403), "
           "not the API's own 'success'", status == 403, "got %r" % (status,))
+
+
+# ---------------------------------------------------------------------------
+# Output contract: atomic writes, file modes, CSV formula cells
+# ---------------------------------------------------------------------------
+
+def check_a_failed_write_keeps_the_previous_good_file():
+    """`open(path, "w")` truncated before writing, so a write that raised
+    halfway left a 567-byte good `out.json` as 0 bytes, and a sidecar
+    rewrite that raised left invalid JSON. Every writer now goes through a
+    temp file in the target's own directory and a rename."""
+    import output_writer as O
+
+    class Unserialisable:
+        pass
+
+    with tempfile.TemporaryDirectory() as tmp:
+        for label, path, write in (
+                ("write_json", os.path.join(tmp, "out.json"),
+                 lambda p: O.write_json([O.Product(title="first"),
+                                         O.Product(title=Unserialisable())], p)),
+                ("write_run_meta", os.path.join(tmp, "out.meta.json"),
+                 lambda p: O.write_run_meta(os.path.join(tmp, "out"),
+                                            {"status": Unserialisable()})),
+                ("write_csv", os.path.join(tmp, "out.csv"),
+                 lambda p: O.write_csv([_ExplodingRow()], p))):
+            good = '{"good": true}'
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(good)
+            raised = False
+            old_out = sys.stdout
+            sys.stdout = io.StringIO()
+            try:
+                write(path)
+            except Exception:                # noqa: BLE001
+                raised = True
+            finally:
+                sys.stdout = old_out
+            check("%s: the injected failure really raised" % label, raised)
+            equal("%s: a failed write leaves the previous file intact" % label,
+                  open(path, encoding="utf-8").read(), good)
+        leftovers = [n for n in os.listdir(tmp) if n.endswith(".tmp")]
+        equal("a failed write leaves no temp file behind", leftovers, [])
+
+
+class _ExplodingRow:
+    """Not a dataclass: `asdict` raises AFTER the CSV header is written."""
+
+
+def check_new_files_follow_the_umask_and_existing_files_keep_their_mode():
+    """A temp file is created 0600 and a rename keeps that, so a naive port
+    makes every output owner-only. New files get `0o666 & ~umask` (what a
+    plain `open()` gives); an existing file keeps its own mode. 002 is the
+    case that tells this apart from a flat 0644."""
+    import output_writer as O
+    if os.name != "posix":
+        return
+    with tempfile.TemporaryDirectory() as tmp:
+        for umask, want in ((0o022, 0o644), (0o002, 0o664), (0o077, 0o600)):
+            path = os.path.join(tmp, "new-%o.json" % umask)
+            old = os.umask(umask)
+            try:
+                O.write_json([], path)
+            finally:
+                os.umask(old)
+            equal("a new file under umask %03o is %03o" % (umask, want),
+                  oct(os.stat(path).st_mode & 0o777), oct(want))
+        path = os.path.join(tmp, "existing.json")
+        with open(path, "w") as f:
+            f.write("[]")
+        os.chmod(path, 0o640)
+        O.write_json([], path)
+        equal("an existing file keeps its own mode",
+              oct(os.stat(path).st_mode & 0o777), oct(0o640))
+
+
+def check_csv_formula_cells_are_neutralised_in_csv_only():
+    import output_writer as O
+    from output_writer import Product
+    row = Product(title='=HYPERLINK("http://x")', url="https://www.montblanc.com/x",
+                  price=-5.0)
+    row_list = Product(title="plain", url="https://www.montblanc.com/y",
+                       price=1.0)
+    first_list_field = next((f.name for f in fields(Product)
+                             if f.type in ("List[str]", "list") or
+                             str(f.type).startswith(("List", "typing.List"))), None)
+    if first_list_field:
+        setattr(row_list, first_list_field, ["@SUM(A1)", "ok"])
+    with tempfile.TemporaryDirectory() as tmp:
+        prefix = os.path.join(tmp, "out")
+        old_out = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            rc = O.finish_run([row, row_list], prefix, "both", False,
+                              blocked=False, stop_reason="completed",
+                              pages_requested=1, pages_completed=1,
+                              start_url="u", final_url="u", mode="category",
+                              extra={"csv_cells_escaped": "caller wins",
+                                     "total_results": 2})
+        finally:
+            sys.stdout = old_out
+        equal("a complete run with rows exits 0", rc, 0)
+        cells = list(csv.DictReader(open(prefix + ".csv", encoding="utf-8")))
+        equal("a formula-shaped title is prefixed in the CSV",
+              cells[0]["title"], "'" + '=HYPERLINK("http://x")')
+        equal("a NUMBER is never escaped (-5 stays a number)",
+              cells[0]["price"], "-5.0")
+        if first_list_field:
+            check("a joined list whose first item is formula-shaped is escaped",
+                  cells[1][first_list_field].startswith("'@SUM"),
+                  cells[1][first_list_field])
+        data = json.load(open(prefix + ".json", encoding="utf-8"))
+        equal("the JSON keeps the site's bytes", data[0]["title"],
+              '=HYPERLINK("http://x")')
+        meta = json.load(open(prefix + ".meta.json", encoding="utf-8"))
+        equal("the caller's extra wins a name collision with the write stats",
+              meta["csv_cells_escaped"], "caller wins")
+
+        rc = O.finish_run([row, row_list], prefix, "csv", False,
+                          blocked=False, stop_reason="completed",
+                          pages_requested=1, pages_completed=1,
+                          start_url="u", final_url="u", mode="category")
+        meta = json.load(open(prefix + ".meta.json", encoding="utf-8"))
+        equal("a joined list is escaped after joining",
+              O._csv_escape(O._csv_value(["@SUM(A1)", "ok"]))[0],
+              "'@SUM(A1) | ok")
+        equal("the sidecar counts the escaped cells",
+              meta.get("csv_cells_escaped"), 2 if first_list_field else 1)
+
+
+# ---------------------------------------------------------------------------
+# Engines driven offline: the driver stubbed when it is not installed
+# ---------------------------------------------------------------------------
+# These checks need the engine MODULE, not its driver, so they must not skip
+# in a venv without the driver — a guard that skips there is green in exactly
+# the job (offline) that runs most often. When the driver is installed the
+# real import is used; otherwise the driver's packages are stubbed for the
+# duration of one private import and removed again.
+
+_DRIVER_PACKAGES = {
+    "playwright_scraper": ("playwright", "playwright.sync_api"),
+    "puppeteer_scraper": ("pyppeteer",),
+    "selenium_scraper": (
+        "selenium", "selenium.webdriver", "selenium.common",
+        "selenium.common.exceptions", "selenium.webdriver.chrome",
+        "selenium.webdriver.chrome.options", "selenium.webdriver.common",
+        "selenium.webdriver.common.by", "selenium.webdriver.support",
+        "selenium.webdriver.support.ui"),
+}
+_OFFLINE_ENGINES = {}
+
+
+def _import_engine_offline(name):
+    if name in _OFFLINE_ENGINES:
+        return _OFFLINE_ENGINES[name]
+    import importlib
+    import importlib.util
+    import types
+    try:
+        module = importlib.import_module(name)
+        _OFFLINE_ENGINES[name] = module
+        return module
+    except ImportError:
+        pass
+
+    class _Stub(types.ModuleType):
+        def __getattr__(self, attr):
+            if attr.startswith("__"):
+                raise AttributeError(attr)
+            value = type(attr, (Exception,), {})
+            setattr(self, attr, value)
+            return value
+
+    added = []
+    for pkg in _DRIVER_PACKAGES[name]:
+        if pkg not in sys.modules:
+            sys.modules[pkg] = _Stub(pkg)
+            added.append(pkg)
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "_offline_" + name, os.path.join(HERE, name + ".py"))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    finally:
+        for pkg in added:
+            sys.modules.pop(pkg, None)
+    _OFFLINE_ENGINES[name] = module
+    return module
+
+
+def _engine_args(engine, extra_argv=()):
+    argv = ["prog", "--url", "https://www.montblanc.com/en-us/writing-instruments",
+            "--retries", "2", "--retry-delay", "0"] + list(extra_argv)
+    old_argv, old_err = sys.argv, sys.stderr
+    sys.argv, sys.stderr = argv, io.StringIO()
+    try:
+        return engine.parse_args()
+    finally:
+        sys.argv, sys.stderr = old_argv, old_err
+
+
+class _FakeResponse:
+    def __init__(self, status):
+        self.status = status
+
+
+class _FakePage:
+    """Answers every primitive the three engines' fetch paths touch."""
+    def __init__(self, fail, status):
+        self.fail, self.status, self.url = fail, status, "about:blank"
+        self.navigations = 0
+        self.exc = Exception
+
+    def goto(self, url, *a, **k):
+        self.navigations += 1
+        if self.fail:
+            raise self.exc("net::ERR_TIMED_OUT (simulated)")
+        self.url = url
+        return _FakeResponse(self.status)
+
+    def get(self, url):                       # Selenium's spelling
+        self.goto(url)
+
+    @property
+    def current_url(self):
+        return self.url
+
+    page_source = ""
+
+    def wait_for_timeout(self, ms):
+        pass
+
+    def screenshot(self, *a, **k):
+        pass
+
+    def save_screenshot(self, *a, **k):
+        pass
+
+    def query_selector_all(self, sel):
+        return []
+
+    querySelectorAll = query_selector_all
+
+    def find_elements(self, *a, **k):
+        return []
+
+    def content(self):
+        return ""
+
+
+class _FakeSession:
+    def __init__(self, page):
+        self.page = self.driver = page
+        self.relaunches = 0
+
+        class _Bridge:
+            def run(self, value):
+                return value
+        self.bridge = _Bridge()
+
+    def relaunch(self):
+        self.relaunches += 1
+
+
+def _drive_fetch(module, html, *, fail=False, status=200, pool=None):
+    """Run one engine's real `_fetch_one_page` against a fake session."""
+    engine = _import_engine_offline(module)
+    args = _engine_args(engine)
+    page = _FakePage(fail, status)
+    if module == "playwright_scraper":
+        page.exc = engine.PWTimeout
+    elif module == "selenium_scraper":
+        page.exc = engine.TimeoutException
+    session = _FakeSession(page)
+    saved = {n: getattr(engine, n) for n in ("_snapshot", "handle_captcha_if_present")}
+    saved_sleep = engine.time.sleep
+    with tempfile.TemporaryDirectory() as tmp:
+        args.out = os.path.join(tmp, "out")
+        engine._snapshot = lambda *a, **k: html
+        engine.handle_captcha_if_present = lambda *a, **k: False
+        engine.time.sleep = lambda s: None
+        try:
+            return engine._fetch_one_page(session, args, pool, 1, args.url), session
+        finally:
+            for n, v in saved.items():
+                setattr(engine, n, v)
+            engine.time.sleep = saved_sleep
+
+
+_REFUSAL_HTML = "<html><body>Access Denied</body></html>"
+
+
+def check_no_proxy_paths_never_dereference_the_pool():
+    """With no --proxy, `pool` is None, and a block-retry or a repeated load
+    failure in the pyppeteer and Selenium engines called `pool.current` /
+    `pool.advance` and crashed with AttributeError (exit 1) where the run
+    should have reported exit 3 or 5. Driven through each engine's real
+    `_fetch_one_page` with a fake session."""
+    for module in ENGINES:
+        for label, kwargs in (("a blocked page", {"html": _REFUSAL_HTML}),
+                              ("a page that never loads",
+                               {"html": "", "fail": True})):
+            try:
+                outcome, session = _drive_fetch(module, pool=None, **kwargs)
+            except Exception as exc:          # noqa: BLE001
+                check("%s, no proxy, %s: does not raise" % (module, label), False,
+                      "%s: %s" % (type(exc).__name__, exc))
+                continue
+            check("%s, no proxy, %s: does not raise" % (module, label), True)
+            check("%s, no proxy, %s: reported as a failed page" % (module, label),
+                  not outcome.ok)
+            if not kwargs.get("fail"):
+                equal("%s, no proxy, %s: re-fetched once, not relaunched"
+                      % (module, label),
+                      (session.page.navigations, session.relaunches), (2, 0))
+
+
+_NOT_FOUND_HTML = """<!DOCTYPE html><html lang="de"><head>
+<title>Die gew&uuml;nschte Seite konnte nicht gefunden werden!</title></head>
+<body><div class="error-container d-flex flex-column">
+<h1 class="error-title">Entschuldigung!</h1>
+<div class="error-system_info"><h2 class="error-subtitle">x</h2></div></div>
+<script>var url = '/de-de/errorpage.html';</script></body></html>"""
+
+
+def check_a_mistyped_url_is_not_found_not_an_empty_catalogue():
+    """`/en-us/this-page-does-not-exist` answers HTTP 404 with the site's own
+    error page, and it was classified `empty` — exit 4, "the catalogue is
+    empty", for a typo. The engines also threw the navigation's status away.
+    Structure trimmed from real 404s on en-us, de-de, fr-fr and ja-jp
+    (2026-10-15)."""
+    import page_flow
+    import product_parser as P
+    output_writer = __import__("output_writer")
+    equal("HTTP 404 is not_found", P.detect_page_state("", 404, "")[0], "not_found")
+    equal("HTTP 410 is not_found", P.detect_page_state("", 410, "")[0], "not_found")
+    equal("the site's own error page is not_found without a status",
+          P.detect_page_state(_NOT_FOUND_HTML, None, "")[0], "not_found")
+    equal("a served listing is still content",
+          P.detect_page_state(LISTING_HTML, 200, LISTING_URL)[0], "content")
+    check("not_found is not retried, solved, or counted as blocked",
+          not page_flow.should_retry("not_found")
+          and not page_flow.should_solve("not_found")
+          and not page_flow.counts_as_blocked("not_found"))
+    for module in ENGINES:
+        for label, html, status in (("HTTP 404", "<html></html>", 404),
+                                    ("its error page", _NOT_FOUND_HTML, 200)):
+            try:
+                outcome, session = _drive_fetch(module, html, status=status)
+            except Exception as exc:          # noqa: BLE001
+                check("%s: %s is handled" % (module, label), False,
+                      "%s: %s" % (type(exc).__name__, exc))
+                continue
+            if module == "selenium_scraper" and label == "HTTP 404":
+                # Selenium exposes no status; its 404 is read from the body.
+                continue
+            equal("%s: %s is not_found" % (module, label), outcome.state, "not_found")
+            check("%s: %s is a failed page, not blocked" % (module, label),
+                  not outcome.ok and outcome.blocked_by is None)
+            equal("%s: %s is fetched once" % (module, label),
+                  session.page.navigations, 1)
+        engine = _import_engine_offline(module)
+        reason = engine._failure_reason(engine.PageOutcome(1, "u", state="not_found"))
+        equal("%s: the stop reason says not_found" % module, reason, "not_found")
+    with tempfile.TemporaryDirectory() as tmp:
+        old_out = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            rc = output_writer.finish_run(
+                [], os.path.join(tmp, "out"), "json", False, blocked=False,
+                stop_reason="not_found", pages_requested=1, pages_completed=0,
+                start_url="u", final_url="u", mode="category")
+        finally:
+            sys.stdout = old_out
+    equal("a run that hit not_found and gathered nothing exits 5, not 4", rc, 5)
+
+
+def check_scraper_api_reads_the_state_not_the_tuple():
+    """`detect_page_state` returns (state, detail); the Scraper API client
+    compared the tuple to "blocked", which can never be equal, so a refusal
+    there fell through to exit 4."""
+    source = open(os.path.join(HERE, "scraper_api_client.py"), encoding="utf-8").read()
+    tree = ast.parse(source)
+    bad = []
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Assign) and isinstance(node.value, ast.Call)
+                and getattr(node.value.func, "id", "") == "detect_page_state"
+                and isinstance(node.targets[0], ast.Name)):
+            bad.append(node.lineno)
+    equal("no detect_page_state result is held as one name", bad, [])
+    check("the client handles not_found", '"not_found"' in source)
+
+
+def _parse_with_env(module, argv, env_url):
+    engine = _import_engine_offline(module)
+    import env_config
+    old_env = os.environ.get("MONTBLANC_URL")
+    old_load = env_config.load_env
+    os.environ["MONTBLANC_URL"] = env_url
+    env_config.load_env = lambda *a, **k: {}
+    old_argv, old_err = sys.argv, sys.stderr
+    sys.argv, sys.stderr = ["prog"] + argv, io.StringIO()
+    try:
+        return engine.parse_args(), None
+    except SystemExit as exc:
+        return None, (exc.code, sys.stderr.getvalue())
+    finally:
+        sys.argv, sys.stderr = old_argv, old_err
+        env_config.load_env = old_load
+        if old_env is None:
+            os.environ.pop("MONTBLANC_URL", None)
+        else:
+            os.environ["MONTBLANC_URL"] = old_env
+
+
+def check_an_env_url_never_overrides_the_command_line():
+    """MONTBLANC_URL, as `.env.example` shipped it, silently replaced the
+    category --category asked for (exit 0, the wrong category) and turned
+    --query and --locale into usage errors, because the conflict checks ran
+    after the environment had filled --url in."""
+    env_url = "https://www.montblanc.com/en-us/writing-instruments"
+    for module in ENGINES:
+        args, err = _parse_with_env(module, ["--category", "bags/backpacks"], env_url)
+        check("%s: --category builds its own URL despite MONTBLANC_URL" % module,
+              args is not None and "bags/backpacks" in (args.url or ""),
+              err or (args and args.url))
+        args, err = _parse_with_env(module, ["--query", "fountain pen"], env_url)
+        check("%s: --query is accepted despite MONTBLANC_URL" % module,
+              args is not None and "search" in (args.url or ""), err)
+        args, err = _parse_with_env(
+            module, ["--locale", "en-fi", "--category", "bags/backpacks"], env_url)
+        check("%s: --locale is accepted despite MONTBLANC_URL" % module,
+              args is not None and "/en-fi/" in (args.url or ""), err)
+        args, err = _parse_with_env(module, [], env_url)
+        check("%s: with no builder flag the env URL is still the default" % module,
+              args is not None and args.url == env_url, err)
+        args, err = _parse_with_env(
+            module, ["--url", env_url, "--query", "pen"], env_url)
+        check("%s: a TYPED --url with --query is still refused" % module,
+              args is None and err and err[0] == 2, err)
+
+
+def check_credential_scan_works_from_any_clone_location():
+    """The scan tested ABSOLUTE path parts, so a clone under `venv/` or
+    `.venv-x/` scanned 0 files and printed "nothing credential-shaped", and
+    it skipped `.env.bak`, JSON, HTML and page dumps entirely. Run against a
+    throwaway copy of the scanner, planted under such an ancestor."""
+    scanner = os.path.join(HERE, ".github", "ci_checks.py")
+    if not os.path.exists(scanner):
+        return          # the Docker image carries no .github/ at all
+    key = "c" * 32
+    with tempfile.TemporaryDirectory() as tmp:
+        for ancestor in ("venv", ".venv-x"):
+            repo = os.path.join(tmp, ancestor, "clone")
+            os.makedirs(os.path.join(repo, ".github"))
+            with open(scanner, encoding="utf-8") as src, \
+                    open(os.path.join(repo, ".github", "ci_checks.py"), "w",
+                         encoding="utf-8") as dst:
+                dst.write(src.read())
+            run = lambda: subprocess.run(
+                [sys.executable, os.path.join(repo, ".github", "ci_checks.py"),
+                 "--secret-check"], capture_output=True, text=True)
+            clean = run()
+            check("scan under %s/ reads files and passes when clean" % ancestor,
+                  clean.returncode == 0 and " 0 files" not in clean.stdout,
+                  clean.stdout[-200:])
+            for name in (".env.bak", "leak.json", "dump.html", "out.json.page3"):
+                path = os.path.join(repo, name)
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write("key=%s\n" % key)
+                caught = run()
+                check("scan under %s/ catches a key in %s" % (ancestor, name),
+                      caught.returncode != 0 and name in caught.stdout,
+                      caught.stdout[-200:])
+                os.remove(path)
+            os.makedirs(os.path.join(repo, "myenv", "lib"))
+            with open(os.path.join(repo, "myenv", "pyvenv.cfg"), "w") as f:
+                f.write("home = /usr\n")
+            with open(os.path.join(repo, "myenv", "lib", "vendored.py"), "w") as f:
+                f.write("# %s\n" % key)
+            check("a virtualenv inside the clone is still skipped",
+                  run().returncode == 0)
+
+    # And the case the old scan printed as a pass: nothing scanned at all.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("_ci_checks_probe", scanner)
+    probe = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(probe)
+    probe.scanned_files = lambda: iter(())
+    old_out = sys.stdout
+    sys.stdout = io.StringIO()
+    try:
+        failed = probe.secret_check()
+    finally:
+        sys.stdout = old_out
+    check("a scan that read 0 files FAILS rather than reporting clean",
+          any("0 files scanned" in line for line in failed), failed)
+
+
+def check_numeric_flags_refuse_impossible_values():
+    """Counts and pauses that cannot be negative (or zero, where they count
+    workers or pages) are refused with an argparse error naming the flag, in
+    every engine — not clamped, and not left to fail mid-run."""
+    url = "https://www.montblanc.com/en-us/writing-instruments"
+    cases = (("--pages", "0"), ("--concurrency", "0"), ("--delay", "-1"),
+             ("--retry-delay", "-1"), ("--proxy-block-retries", "-1"),
+             ("--retries", "0"))
+    for module in ENGINES:
+        engine = _import_engine_offline(module)
+        for flag, bad in cases:
+            old_argv, old_err = sys.argv, sys.stderr
+            sys.argv, sys.stderr = ["prog", "--url", url, flag, bad], io.StringIO()
+            try:
+                engine.parse_args()
+                check("%s refuses %s %s" % (module, flag, bad), False, "accepted")
+            except SystemExit as exc:
+                err = sys.stderr.getvalue()
+                check("%s refuses %s %s, naming the flag" % (module, flag, bad),
+                      exc.code == 2 and "error:" in err and flag in err.split("error:")[-1],
+                      err[-160:])
+            finally:
+                sys.argv, sys.stderr = old_argv, old_err
+
+
+def check_no_private_citations_in_shipped_files():
+    """The project's internal notes are not public, so a pointer into them
+    (by file name or by a section number) is a dead reference for every
+    reader. Rules are stated in this repo's own words instead. The tokens
+    are assembled from pieces so this check does not match itself."""
+    tokens = ("CLAUDE" + ".md", "claude_" + "2scraper", "2scraper_" + "repo_rules",
+              "play" + "book")
+    section = re.compile("§" + r"\s*\d")
+    try:
+        tracked = subprocess.run(["git", "ls-files"], cwd=HERE, capture_output=True,
+                                 text=True, check=True).stdout.split()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return          # not a git checkout (the Docker image): nothing to scan
+    hits = []
+    for name in tracked:
+        path = os.path.join(HERE, name)
+        try:
+            text = open(path, encoding="utf-8").read()
+        except (OSError, UnicodeDecodeError):
+            continue
+        for lineno, line in enumerate(text.splitlines(), 1):
+            if any(t in line for t in tokens) or section.search(line):
+                hits.append("%s:%d" % (name, lineno))
+    check("scanned the tracked files", len(tracked) > 10, len(tracked))
+    equal("no shipped file cites the private notes", hits[:10], [])
 
 
 CHECKS = [v for k, v in sorted(globals().items()) if k.startswith("check_")]

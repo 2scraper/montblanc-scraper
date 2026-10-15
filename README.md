@@ -212,7 +212,7 @@ different facts, and only the second one justifies the omission:
 | Checked | Found | So |
 |---|---|---|
 | a captcha of any kind | **0** `data-sitekey`, `*_SITE_KEY`, `<captcha-*>`, reCAPTCHA / Turnstile / hCaptcha references on listing, product and home pages | nothing is wired here — not merely unrendered |
-| `<link rel="next">` | **0** on every listing kind | §7's selector layer is unavailable, so pagination rests on `start`/`sz` (verified against the site's own sort links) and on the data running out |
+| `<link rel="next">` | **0** on every listing kind | the `link[rel=next]` selector layer is unavailable, so pagination rests on `start`/`sz` (verified against the site's own sort links) and on the data running out |
 | a cents dash (`349,– €`) | **0** across `en-fi`, `de-de`, `en-us` | the German-retail dash convention this family handles elsewhere is not used |
 | instalment text in a price node | **0** Klarna / instalment / financing strings | no risk of reading a monthly payment as a price |
 | struck-through / was-prices | **0** | no discount chain, hence no DOM price overlay |
@@ -308,11 +308,29 @@ locale base_sku collection sub_collection color size special_edition variant_of 
 ```
 
 Exit codes: `0` ok · `1` crash · `2` bad usage · `3` blocked · `4` zero
-products · `5` remote API error · `6` partial.
+products (the site answered, and the answer was nothing) · `5` the content
+was never obtained (a navigation timeout, a dead proxy, a remote API error,
+an address the site says does not exist, or a served page the parser could
+not read) · `6` partial: rows were gathered, then the run stopped early.
+
+A mistyped URL is exit `5`, not `4`: Montblanc answers HTTP 404 with its own
+error page, and the engines read that as "not found" rather than as an
+empty catalogue.
 
 **A run that finds nothing writes nothing** — `--allow-empty` opts out. A
 failed run leaves the previous good output in place and writes no sidecar, so
 a consumer never sees a `failed` status beside good data.
+
+Every output file (JSON, CSV and the `.meta.json` sidecar) is written to a
+temporary file beside it and renamed into place, so a write that fails halfway
+leaves the previous file intact rather than truncated. A new file gets the
+mode your umask gives it; an existing file keeps its own.
+
+**CSV only:** a text cell starting with `=`, `+`, `-`, `@`, a tab or a line
+break is prefixed with `'`, so a spreadsheet shows it as text instead of
+running it as a formula. Numbers are never touched, the JSON keeps the site's
+text exactly, and the sidecar's `csv_cells_escaped` says how many cells were
+changed.
 
 ### Comparing two runs
 
@@ -342,12 +360,17 @@ Precedence, highest first: **explicit flag → exported environment variable →
 `.env` → default.** Variables: `TWOCAPTCHA_KEY`, `MONTBLANC_CDP_ENDPOINT`,
 `MONTBLANC_PROXY`, `MONTBLANC_URL`.
 
+`MONTBLANC_URL` is a default target only, and `.env.example` ships it
+commented out. `--query`, `--category` or `--locale` on the command line
+build their own URL and set it aside; only a `--url` you typed conflicts
+with them.
+
 A placeholder still carrying `{...}` is treated as **unset**, so a copied
 `.env.example` never authenticates as if it were configured.
 
-> Scraping Browser profile credentials expire in about a day. Never paste a
-> working `ws://…` endpoint into a repo, a README or a workflow — get a fresh
-> one from your dashboard when you need it.
+> Scraping Browser profile credentials expire; an expired endpoint answers
+> HTTP 401. Never paste a working `ws://…` endpoint into a repo, a README or
+> a workflow — get a fresh one from your dashboard when you need it.
 
 ---
 

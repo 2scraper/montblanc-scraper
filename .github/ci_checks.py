@@ -81,14 +81,36 @@ CREDENTIAL_ALLOWED = (
 HEX32 = re.compile(r"\b[0-9a-f]{32}\b")
 # Contexts in which a 32-hex string is plainly not a key. Site-specific
 # entries belong here only once a committed fixture actually carries one —
-# CLAUDE.md §16: a family-wide entry copied without checking is how dead
-# code spreads. Kept as a CONTEXT allowlist rather than by loosening the
+# a family-wide entry copied without checking is how dead code spreads. Kept as a CONTEXT allowlist rather than by loosening the
 # pattern: a bare 32-hex string anywhere else still fails, which is the
 # point of the check.
 HEX32_ALLOWED = ("sha", "hash", "nonce", "example", "md5", "digest",
                  "checksum")
 
-SCANNED_SUFFIXES = (".py", ".md", ".txt", ".yml", ".yaml", ".example")
+SCANNED_SUFFIXES = (".py", ".md", ".txt", ".yml", ".yaml", ".example",
+                    # Captures, fixtures and outputs: a key that reaches a
+                    # page dump or a JSON fixture is still a key, and those
+                    # are the biggest files in a working tree.
+                    ".json", ".html", ".csv", ".toml", ".cfg", ".ini")
+
+# `--dump-html X --pages N` writes `X.page1`, `X.page2`, … — no scanned
+# suffix at all, and the bytes of a real page.
+_PAGE_DUMP_SUFFIX = re.compile(r"\.page\d+$")
+
+
+def _is_scanned_name(path):
+    """Whether this file's NAME puts it in scope."""
+    name = path.name
+    # A renamed working copy of `.env` — `.env.bak`, `.env.local`,
+    # `.env.save` — is exactly where a live key survives, untracked, one
+    # `git add -A` from a commit. `.env` itself is the user's real config
+    # and is excluded by name: scanning it would fail every local run of
+    # anyone who has followed the README.
+    if name.startswith(".env") and name != ".env":
+        return True
+    if _PAGE_DUMP_SUFFIX.search(name):
+        return True
+    return path.suffix in SCANNED_SUFFIXES
 
 
 # A directory holding `pyvenv.cfg` is a virtualenv, whatever it is called.
@@ -99,7 +121,7 @@ SCANNED_SUFFIXES = (".py", ".md", ".txt", ".yml", ".yaml", ".example")
 # into pip's vendored code and flags a 32-hex string in `_elffile.py` as
 # key-shaped. Correct about the string, wrong about the file — and it is the
 # FIRST thing a new user sees from `python3 smoke_test.py`. A guard people
-# have to argue with is one they learn to suppress (CLAUDE.md §22).
+# have to argue with is one they learn to suppress.
 #
 # Deliberately NOT a narrowing of what gets scanned: an untracked file is
 # still read, because a key pasted into a scratch file beside the scripts is
@@ -128,14 +150,19 @@ def _is_in_virtualenv(path):
 
 def scanned_files():
     for path in sorted(REPO.rglob("*")):
-        if not path.is_file() or path.suffix not in SCANNED_SUFFIXES:
+        if not path.is_file() or not _is_scanned_name(path):
             continue
         # `.venv-playwright` and friends are real directory names here — the
-        # README tells users to make one venv per engine (§6), so a scan that
+        # README tells users to make one venv per engine, so a scan that
         # only skips the exact name `.venv` walks into vendored test data and
         # fails on somebody else's fixture URLs.
+        #
+        # RELATIVE parts, never `path.parts`: those include every ancestor of
+        # the clone, so a clone under `~/venv/` or `/tmp/.venv-x/` skipped
+        # every file and still printed "nothing credential-shaped".
+        rel_parts = path.relative_to(REPO).parts
         if any(part.startswith(".venv") or part in {".git", "__pycache__", "venv"}
-               for part in path.parts):
+               for part in rel_parts[:-1]):
             continue
         if _is_in_virtualenv(path):
             continue
@@ -227,6 +254,11 @@ def secret_check():
                 failed.append(f"{rel}:{lineno} contains {match[:6]}… — a "
                               f"32-char hex string, the shape of a 2captcha key")
 
+    if not scanned:
+        # "Nothing credential-shaped" about nothing at all is the one
+        # message this check must never print.
+        failed.append("0 files scanned — the exclusions swallowed the whole "
+                      "tree, so nothing was checked")
     if not failed:
         print(f"ok       {scanned} files scanned, nothing credential-shaped")
     return failed

@@ -9,16 +9,15 @@
 # challenge of any kind. A GitHub runner is a datacenter address too, so this
 # workflow re-measures that claim every morning.
 #
-# CLAUDE.md §11 says a canary that CANNOT pass must skip rather than fail,
-# because a check that is always red teaches everyone to ignore checks. The
-# other half of that rule applies here: **a canary that CAN pass without a
-# credential must never be gated on one**. If Montblanc ever puts its
+# **A canary that CAN pass without a credential must never be gated on
+# one.** If Montblanc ever puts its
 # catalogue behind a key or a bot manager, this badge goes red the next
 # morning and the README's claim is retested without anyone remembering to.
 #
-# The third job is the exception, and it is guarded: it exercises the PAID
-# path (the Scraping Browser API over CDP), which cannot run without a
-# secret, so it skips with a ::notice:: when none is set.
+# The third job exercises the PAID path (the Scraping Browser API over CDP),
+# which cannot run without a secret. Without the secret it FAILS with an
+# ::error:: naming it rather than going green: a job that skips reads as a
+# pass and has tested nothing.
 #
 #     gh secret set MONTBLANC_CDP_ENDPOINT --repo 2scraper/montblanc-scraper
 #
@@ -39,7 +38,7 @@ permissions:
 
 env:
   # A top-level category with ~280 products, so three pages really is three
-  # pages. §11: with one page pagination is never exercised, which is exactly
+  # pages. With one page pagination is never exercised, which is exactly
   # how a silent single-page bug survived in a sibling repo.
   CANARY_URL: "https://www.montblanc.com/en-us/writing-instruments"
 
@@ -89,7 +88,9 @@ jobs:
                   4: "Zero products (exit 4). Either the category is empty "
                      "now, or the page shape moved and the parser is reading "
                      "nothing. Check the uploaded HTML dump.",
-                  5: "Remote API error (exit 5) — nothing was tested.",
+                  5: "Nothing was obtained (exit 5): a navigation timeout, "
+                     "a 404 for the canary URL, or a page the parser could "
+                     "not read. Nothing about the catalogue was tested.",
                   6: "Partial (exit 6): some pages came back and some did not.",
               }.get(code, "See the log."))
               sys.exit(1)
@@ -103,7 +104,7 @@ jobs:
               if not ok:
                   failures.append(f"{label}: {detail}")
 
-          # §20: fail on a parser failure BY NAME. "0 products" would send
+          # Fail on a parser failure BY NAME. "0 products" would send
           # whoever reads this red badge to check the URL, when the thing
           # that moved is the parser. This stop_reason means Montblanc served
           # a page that links to products and we turned it into nothing.
@@ -127,9 +128,11 @@ jobs:
           # The site's own arithmetic, which is what pages are planned from.
           # If this stops being read, pagination silently falls back to
           # walking off the end.
+          # Parser health, not catalogue size: the count must be READ, and
+          # it cannot be smaller than what this run itself collected.
           want("the site stated a result count",
                isinstance(meta.get("total_results"), int)
-               and meta["total_results"] > 100,
+               and meta["total_results"] >= len(rows),
                f'total_results was {meta.get("total_results")!r}')
           want("pages_available follows from it",
                meta.get("pages_available") and meta["pages_available"] >= 3,
@@ -185,15 +188,14 @@ jobs:
           want("price_source uses only known values",
                sources <= {"jsonld", "dom", "dom_range"}, str(sources))
 
-          # in_stock must not be a constant. The JSON-LD says InStock on
-          # everything; the tile is what varies, and if this ever comes back
-          # single-valued the read has silently fallen back to the JSON-LD.
+          # in_stock is REPORTED, not asserted. Whether a category happens
+          # to hold a sold-out product is stock, not parser health, and an
+          # assertion on it would go red with a correct parser.
           stock = {r.get("in_stock") for r in rows}
           print(f"in_stock values: {stock}")
-          want("in_stock is not constant-True",
-               stock != {True},
-               "every row is in stock — that is the JSON-LD default, so the "
-               "tile read has probably broken (see output_writer's docstring)")
+          if stock == {True}:
+              print("::notice::every row is in stock today; if that persists, "
+                    "check the tile read (see output_writer's docstring)")
 
           # page+position must be unique across pages, or the column is
           # worthless — position restarts at 1 on every page.
@@ -370,24 +372,20 @@ jobs:
       # through job `env` and read in each step's `if`.
       HAVE_CDP: ${{ secrets.MONTBLANC_CDP_ENDPOINT != '' }}
     steps:
-      - name: Explain the skip
+      - name: Require the secret
         if: env.HAVE_CDP != 'true'
         run: |
-          echo "::notice::Skipping the Scraping Browser run: no MONTBLANC_CDP_ENDPOINT secret is set."
-          echo "This job exercises the PAID path — the one that has no free"
-          echo "equivalent to fall back on, and therefore the one §16 says to"
-          echo "run before shipping, because credential-gated paths are the"
-          echo "paths nobody ran."
+          echo "::error::MONTBLANC_CDP_ENDPOINT is not set, so the Scraping Browser path was NOT tested."
+          echo "This job exercises the PAID path, the one with no free"
+          echo "equivalent to fall back on; credential-gated paths are the"
+          echo "paths nobody runs. Set it with:"
           echo
           echo "    gh secret set MONTBLANC_CDP_ENDPOINT --repo 2scraper/montblanc-scraper"
           echo
-          echo "Note the listing and product canaries above need NO secret and"
-          echo "cover the parser end to end. Nothing is untested because this"
-          echo "job skipped — only the CDP transport is."
-          echo
-          echo "Scraping Browser profile credentials expire in about a day, so"
-          echo "a scheduled job on this secret will rot between runs. Prefer"
-          echo "dispatching this workflow by hand when you want to check it."
+          echo "The listing and product jobs need NO secret and cover the"
+          echo "parser end to end; only the CDP transport is untested here."
+          echo "An expired endpoint answers HTTP 401 (exit 5 below)."
+          exit 1
 
       - uses: actions/checkout@v4
         if: env.HAVE_CDP == 'true'
@@ -403,7 +401,7 @@ jobs:
           pip install -r requirements.txt -r requirements-playwright.txt
 
       # The credential goes through the ENVIRONMENT, never a --proxy/--cdp
-      # flag on a command line (§3, §11): env_config.py already reads exactly
+      # flag on a command line: env_config.py already reads exactly
       # this variable, and a secret in argv is readable by anything that can
       # run `ps`.
       - name: Run
@@ -429,7 +427,7 @@ jobs:
               print(f"::error::The Scraping Browser run exited {code}. "
                     f"Exit 5 means the endpoint itself refused — a "
                     f"profile_locked (another run holds this pid) or expired "
-                    f"credentials, not a fault in this code.")
+                    f"credentials (HTTP 401), not a fault in this code.")
               sys.exit(1)
           rows = json.load(open("canary_cdp.json"))
           if len(rows) < 20:
@@ -438,7 +436,7 @@ jobs:
           # The marker check that matters on this path: 2Captcha's auto-solve
           # extension injects `cf-turnstile` into every page it loads, and a
           # repo that carried that marker would report this good page as
-          # blocked (§8, §19). This repo does not carry it — exit 0 here is
+          # blocked. This repo does not carry it — exit 0 here is
           # the proof, since a false positive would have been exit 3.
           print(f"{len(rows)} rows over the Scraping Browser, exit 0.")
           PY

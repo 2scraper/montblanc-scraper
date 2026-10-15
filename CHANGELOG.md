@@ -10,7 +10,71 @@ When it does, the release notes lead with it.
 
 ## [Unreleased]
 
+> **Behaviour changes.** A URL Montblanc answers with HTTP 404 (or its own
+> error page) now ends exit **5** with `stop_reason: not_found`, not exit 4
+> "zero products". `--pages 0`, `--concurrency 0` and a negative `--delay`,
+> `--retry-delay` or `--proxy-block-retries` are now usage errors (exit 2),
+> as is a negative `--retries` on the Scraper API client. CSV cells that
+> begin with `=`, `+`, `-`, `@`, a tab or a line break now carry a leading
+> `'` (CSV only; the sidecar counts them as `csv_cells_escaped`). Output
+> files are replaced atomically; a new file gets the mode your umask gives,
+> an existing one keeps its own. `.env.example` now ships `MONTBLANC_URL`
+> commented out.
+
 ### Fixed
+
+- **The pyppeteer and Selenium engines crashed with no proxy.** A blocked
+  page, or (pyppeteer) a page that failed to load repeatedly, reached
+  `pool.current` / `pool.advance` with `pool` set to None: `AttributeError`,
+  exit 1, where the run should have reported exit 3 or 5. Both now take the
+  Playwright engine's form: rotate only with a pool, otherwise re-fetch
+  through the same path after a pause. An offline check drives each
+  engine's real `_fetch_one_page` with a fake session and no pool.
+- **`MONTBLANC_URL` overrode the command line.** Set (as `.env.example`
+  shipped it), it silently replaced the category `--category` asked for
+  (exit 0, the wrong category) and turned `--query` and `--locale` into
+  usage errors. The engines now record what was typed before the
+  environment fills anything in; a builder flag wins over the environment's
+  URL, and only a typed `--url` conflicts with it.
+- **A mistyped URL was reported as an empty catalogue.** The browser engines
+  threw away the navigation's HTTP status, and the site's 404 page (which
+  references its own assets) classified as "served, no products": exit 4.
+  Playwright and pyppeteer now pass the status to the classifier, the
+  site's error page is recognised by its structure for Selenium (checked on
+  four locales), and `not_found` is its own terminal state: not retried,
+  not blocked, exit 5.
+- **The Scraper API client never detected a block.** It compared the
+  `(state, detail)` tuple to `"blocked"`, which can never be equal, so a
+  refusal fell through to exit 4. It now reads the state, and reports a 404
+  as exit 5.
+- **A failed write destroyed the previous output.** `write_json`,
+  `write_csv` and the sidecar opened their target with `"w"`, truncating it
+  before writing; a write that raised halfway left a 0-byte `out.json` or
+  an invalid sidecar. All three now write a temp file in the same directory
+  and rename it into place.
+- **CSV cells were written as formulas.** A product text starting with `=`
+  (or `+ - @`, tab, CR, LF) is now prefixed with `'` in the CSV.
+- **The credential scan could scan nothing and pass.** Its exclusions were
+  tested against the ABSOLUTE path, so a clone under a directory named
+  `venv` or `.venv-…` skipped every file and printed "nothing
+  credential-shaped". It now uses paths relative to the repo, fails when it
+  scanned 0 files, and also reads `.env.*` copies, JSON, HTML, CSV and
+  `--dump-html` page files.
+- `.gitignore` now covers `X.pageN` dumps, a capture saved at the top of the
+  tree, and common scratch directories (`live/`, `out/`, `tmp/`, …).
+- The README described exit 5 as "remote API error"; it now says what the
+  code does (the content was never obtained). Credentials of a Scraping
+  Browser profile are no longer said to last "about a day": an expired one
+  answers HTTP 401, and that is what the docs now say.
+- The canary no longer asserts on stock (`in_stock` not constant) or on the
+  category's size; it checks that the result count is read. Its Scraping
+  Browser job now FAILS with an error naming `MONTBLANC_CDP_ENDPOINT` when
+  the secret is missing instead of skipping green.
+- References to private development notes were removed from code comments,
+  workflows and this changelog, and a suite check keeps them out.
+- The test matrix now includes Python 3.13, which the badge already claimed.
+
+### Shipped in 0.1.3 / 0.1.4 but missing from their notes
 
 - **The Scraper API path sent `waitFor` in a form the live API rejects,
   and read the wrong field as the target's status.** Measured 2026-09-23
@@ -86,7 +150,7 @@ now runs unconditionally, with two further source assertions (a budget
 exists; no bare counter survives beside it), and the planted gap is red
 locally. Controlled by re-creating the exact state CI failed on.
 
-That is §22 twice over in one release: *when a check resolves something
+That is one rule twice over in one release: *when a check resolves something
 before testing it, ask what it does when the resolution fails.* This one
 stayed silent about the single loudest thing it could have said — and the
 release was announced before CI had confirmed it, which is what let a red
@@ -97,7 +161,7 @@ commit carry a tag.
 The `[0.1.3]` entry below is left exactly as the tag published it. A
 released section is history that anyone can check with
 `git show v0.1.3:CHANGELOG.md`, so the correction belongs here rather than
-edited into it (§19).
+edited into it.
 
 ## [0.1.3] — 2026-10-07
 
@@ -115,14 +179,14 @@ fixed and all controlled afterwards.
 
 - **A product with no variants now parses** (was: 0 rows). `ProductGroup`
   and plain `Product` go through the same row builder, so the two shapes
-  cannot drift in what they populate. §20 taught "a detail page may publish
+  cannot drift in what they populate. Experience taught "a detail page may publish
   a different type than the listing"; the correction is that a detail page
   publishes a different type **depending on the product**, so counting the
   blocks on one captured page answers for that page and not for the route.
 
   It stayed hidden because both captured product pages happened to be
   variant groups AND the canary pinned a 16-variant Meisterstück — a fixture
-  that picks the lucky case is a guard that cannot fail (§21). The canary
+  that picks the lucky case is a guard that cannot fail. The canary
   now runs both shapes.
 
 - **A parse failure after page 1 reported a COMPLETE run.** The state was
@@ -141,9 +205,9 @@ fixed and all controlled afterwards.
   Reproduced with the solver stubbed: **3 invocations, `SOLVES_PER_PAGE =
   1`**. Both call sites now spend from one `_SolveBudget`, checked BEFORE
   each purchase, and it does not reset on rotation — a fresh exit is a
-  reason to re-fetch, not a fresh allowance. This is §17's "a policy
-  constant nothing reads" with a bill attached, and §23 records the same
-  defect family-wide.
+  reason to re-fetch, not a fresh allowance. This is the familiar "a policy
+  constant nothing reads" with a bill attached, and the same defect was
+  found family-wide.
 
 - **`--retries 0` skipped the navigation and blamed the site.**
   `range(1, 0 + 1)` is empty, so the engine never called `goto`, then read
@@ -155,7 +219,7 @@ fixed and all controlled afterwards.
   a missing sidecar SKIPPED the completeness guard rather than being a
   refusal — so the check was silently disabled for exactly the files least
   able to prove they are complete, and a failed run writes no sidecar on
-  purpose (§8); and nothing compared the SELECTION, so a
+  purpose; and nothing compared the SELECTION, so a
   `writing-instruments` run against a `bags` run of the same market and
   ordering reported "3 added, 3 removed" with exit 0. Both now refuse, and
   two runs of one listing at different page offsets still compare.
@@ -166,27 +230,27 @@ fixed and all controlled afterwards.
 one of those controls paid for itself immediately: the first `--retries`
 check searched the SOURCE for its own error message, so disabling the guard
 while leaving the message in place kept the suite GREEN. It now invokes the
-parser and asserts the exit. That is §22's rule — a control is only as good
+parser and asserts the exit. That is the rule — a control is only as good
 as the edit it actually made — catching a check that tested a sentence
 rather than a behaviour.
 
 ### Not changed, with reasons
 
-- **One shared fetch loop across the three engines** (§26). A fair
+- **One shared fetch loop across the three engines**. A fair
   recommendation and the page-2 bug is evidence for it — three copies of the
-  loop is why the parse-failure state reached one of three paths. But §1
+  loop is why the parse-failure state reached one of three paths. But the family
   states the per-engine loop as the family's design and binance-scraper is
   the only repo that has unified it, so this is a family-wide decision
   rather than a montblanc defect. Routing all three paths through
   `_failure_reason` and `_SolveBudget` takes the specific divergences out
   without rewriting the architecture under an audit's recommendation.
 - **Flat module names** (`output_writer`, `product_parser`, …) preventing
-  two scrapers in one environment. True, and deliberate family-wide: §6
+  two scrapers in one environment. True, and deliberate family-wide: the family
   documents a flat collection of scripts with one venv per repo.
 - **`complete` on a one-page run.** Correct as it stands: the sidecar
   already records `total_results` and `pages_available`, so a reader can
   tell a complete PAGE from a complete catalogue. The word describes the
-  request, which is what §21 settled.
+  request, which was settled earlier.
 
 ## [0.1.2] — 2026-09-18
 
@@ -199,7 +263,7 @@ rather than a behaviour.
 
 - **The README now names the protection that is actually here.** Prompted by
   a plain question — "did we meet a captcha, and which one?" — answered by
-  measuring rather than by re-reading the code (§21, which notes that a plain
+  measuring rather than by re-reading the code (a plain
   question has twice been the cheapest bug-finding tool available).
 
   The captcha count holds and got stronger: **0 markers of any vendor across
@@ -211,7 +275,7 @@ rather than a behaviour.
   `ak_p` server-timing, `x-akamai-transformed`, with Cloudflare in the chain
   too (`cf-ray`, `server: cloudflare`). A body-only scan reports a clean
   page and is not wrong — it is just not looking where the answer is. This
-  is §18's "'no challenge rendered' is not 'no captcha configured'" with the
+  is the lesson "'no challenge rendered' is not 'no captcha configured'" with the
   evidence one layer out from where that section looks for it.
 
   What was measured is that Bot Manager **never challenged**: `_abck` came
@@ -251,7 +315,7 @@ A full secret audit, since the repo is public:
 
 ## [0.1.1] — 2026-09-18
 
-A pass back over CLAUDE.md, section by section, checking each claim against
+A pass back over the family's rules, one by one, checking each claim against
 the repo rather than against memory. It found one missing signal, one
 coverage floor that fires on correct data, and three pieces of stale
 presentation.
@@ -259,14 +323,14 @@ presentation.
 ### Added
 
 - **A served page that links to products and parses to ZERO rows now says so
-  by name** (§20). It reports `stop_reason: parser_found_nothing`, is
+  by name**. It reports `stop_reason: parser_found_nothing`, is
   excluded from `COMPLETE_STOP_REASONS`, and the canary fails on it by name.
   Reported as plain "0 products" it would send the reader to check the URL
   when the thing that moved is the parser. The exit code is unchanged —
   the catalogue question really was answered — so only the status and the
   reason carry the distinction.
 
-  §20 also says to check such a signal CAN fire before adding it: here it
+  Also check such a signal CAN fire before adding it: here it
   can, because the tile fallback needs a `data-pid` element as well as a
   product href, so markup that loses its tiles while keeping its links lands
   exactly there.
@@ -283,7 +347,7 @@ presentation.
 - **The repo description was 29 words**, against the 15–25 the family notes
   ask for. Now 23.
 - **A stale check count inherited from a sibling repo** (`~339 checks`) was
-  sitting in `pyproject.toml`, already wrong on arrival — §13's trap exactly.
+  sitting in `pyproject.toml`, already wrong on arrival — the trap exactly.
   Removed rather than updated: `python3 smoke_test.py` prints the real one.
 
 ### Measured
@@ -418,7 +482,7 @@ looks right:
 
 ### Columns this site does not have
 
-§9 of the family notes says a column null on every row should not exist, and
+The family's rule is that a column null on every row should not exist, and
 that removing one needs the measurement written down. Counted over 384 tiles
 on eight categories plus two product pages:
 

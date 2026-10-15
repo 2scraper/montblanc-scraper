@@ -616,8 +616,7 @@ def solve_recaptcha(challenge: CaptchaChallenge, twocaptcha_api_key: Optional[st
                      api_version: str = "v2", min_score: float = 0.7) -> str:
     """Public entry point: solve `challenge` through 2captcha and return the token.
 
-    There used to be a `use_antidetect` branch here, behind a CLI flag of the
-    same name, that POSTed to a hardcoded local "solve-captcha" endpoint.
+    There used to be a second branch here, behind a CLI flag, that POSTed to a hardcoded local "solve-captcha" endpoint.
     It was removed before publishing: that endpoint was a placeholder for a
     product that does not exist under that name, so the flag could not work for
     anyone who set it, and the real "the browser solves it for you" path is
@@ -724,4 +723,4 @@ solve_recaptcha_v3 = solve_recaptcha
 # what the address has been doing — a narrow list is how a challenge gets
 # reported as an empty page months later. A solver for a challenge this site
 # has never been observed to serve is dead code; a DETECTOR for one is cheap
-# insurance. See the family note in CLAUDE.md.
+# insurance.
