@@ -17,7 +17,7 @@ jobs:
       matrix:
         # 3.9 is the floor the README claims. Claiming it without testing it is
         # how a walrus operator or a `X | None` annotation ships and breaks it.
-        python-version: ["3.9", "3.12"]
+        python-version: ["3.9", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
 
       - name: Every CLI answers --help, and the sample output is real
         # BOTH of these were once INLINE reimplementations of checks that
-        # `.github/ci_checks.py` already implements — which is CLAUDE.md §17's
+        # `.github/ci_checks.py` already implements — which is the failure
         # "two sources of truth, one dead and one holed", and it bit on this
         # repo's very first CI run: the inline sample check still imported
         # `output_writer.Business`, a class this repo renamed, so the job died

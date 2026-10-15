@@ -17,7 +17,7 @@ Compare two montblanc-scraper runs by `sku` and report what moved.
                the two rows were read a different way — a listing row and a
                `--mode product` variant row populate different columns — so
                the difference is about our two snapshots rather than about
-               the product, and `--fail-on-change` ignores it (§8)
+               the product, and `--fail-on-change` ignores it
 
 **Three things make two runs incomparable, and all three are refused rather
 than diffed.** Each would otherwise produce a diff whose every line is an
@@ -91,16 +91,15 @@ TRACKED_FIELDS = (
 # listing run against a product run would report each of these as a change on
 # every row, and none of it would be about the product. When the two rows
 # disagree on `mode`, these are reported as `source_changed` rather than as
-# changes — this family's rule (§8: a difference that comes with a
+# changes — this family's rule (a difference that comes with a
 # provenance difference says something about our own two snapshots, not about
 # the site).
-PROFILE_ONLY_FIELDS = (
+PRODUCT_MODE_ONLY_FIELDS = (
     "collection", "sub_collection", "special_edition", "variant_of",
 )
 
-# Kept under a second name because that is what this repo's row model calls
-# the distinction. `PROFILE_ONLY_FIELDS` is the family's spelling.
-PRODUCT_MODE_ONLY_FIELDS = PROFILE_ONLY_FIELDS
+# The older name, kept so an external caller importing it does not break.
+PROFILE_ONLY_FIELDS = PRODUCT_MODE_ONLY_FIELDS
 
 
 def _load(path: str) -> List[dict]:
@@ -153,11 +152,11 @@ def diff_products(old: List[dict], new: List[dict]) -> dict:
         # false alarm about the site; the other columns still compare fine.
         sources = (before.get("mode"), after.get("mode"))
         if sources[0] != sources[1] and any(f in field_changes
-                                            for f in PROFILE_ONLY_FIELDS):
+                                            for f in PRODUCT_MODE_ONLY_FIELDS):
             profile_part = {f: v for f, v in field_changes.items()
-                            if f in PROFILE_ONLY_FIELDS}
+                            if f in PRODUCT_MODE_ONLY_FIELDS}
             other_part = {f: v for f, v in field_changes.items()
-                          if f not in PROFILE_ONLY_FIELDS}
+                          if f not in PRODUCT_MODE_ONLY_FIELDS}
             source_changed.append({
                 "sku": sku, "title": after.get("title"),
                 "mode": {"old": sources[0], "new": sources[1]},
@@ -248,7 +247,7 @@ def _check_comparable(args) -> bool:
             # had been moved, or rows assembled by hand, read as two full
             # snapshots of the catalogue.
             #
-            # A failed run deliberately writes NO sidecar (§8), so "no
+            # A failed run deliberately writes NO sidecar, so "no
             # sidecar" is a state this repo produces on purpose and the one
             # it must not treat as "probably fine".
             problems.append(

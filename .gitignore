@@ -24,6 +24,25 @@ live_results.zip
 *_debug.html
 *_debug.png
 *.html.page*
+# `--dump-html X --pages N` writes `X.page1` … `X.pageN` whatever X is called.
+*.page[0-9]*
+# A capture saved at the top of the tree. landing.html is the only page that
+# belongs there.
+/*.html
+!/landing.html
+# Working directories a capture or a run tends to be written into, by KIND
+# rather than by one name somebody happened to choose.
+live/
+out/
+output/
+runs/
+run/
+results/
+result/
+tmp/
+scratch/
+dumps/
+dump/
 
 # --- captures kept for parser work ---------------------------------------
 # The smoke suite's fixtures are committed (trimmed, inside smoke_test.py);
@@ -49,7 +68,7 @@ build/
 
 # --- environments --------------------------------------------------------
 # `.venv*` rather than `.venv/`, because the README tells you to make ONE
-# VENV PER ENGINE (§6: the three engines' pins are mutually unsatisfiable),
+# VENV PER ENGINE (the three engines' pins are mutually unsatisfiable),
 # so `.venv-playwright/` and `.venv-selenium/` are the normal names here and
 # the bare `.venv/` pattern misses every one of them.
 .venv*
@@ -76,8 +95,6 @@ secrets*
 # a `.env.hold` made while testing that was committed WITH A LIVE KEY in it,
 # recoverable only because that repo was private at the time. On 2026-09-17
 # a sibling had an untracked `.env.bak` holding a 32-hex key in a PUBLIC
-# repository, one `git add -A` from publication. Craigslist was fixed then
-# and the fix never reached anyone else, which is §16's rule unapplied: when
-# you fix one, check the siblings.
+# repository, one `git add -A` from publication.
 .env*
 !.env.example

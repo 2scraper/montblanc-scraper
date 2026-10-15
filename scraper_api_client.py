@@ -10,7 +10,7 @@ driver, no Chromium download.
 
 When this path is the right one, and when it is not
 ----------------------------------------------------
-Say it plainly rather than selling it (§13). **Montblanc served an ordinary
+Say it plainly rather than selling it. **Montblanc served an ordinary
 datacenter address on every mode measured** (2026-09-17, from a Hetzner IP:
 listings, search and product pages all HTTP 200, no key, no proxy, no
 challenge). So this client is not a way IN — nothing is keeping you out.
@@ -256,7 +256,17 @@ def _run_once(args, attempt: int = 1, attempts: int = 1) -> int:
 
     # Same policy as the browser engines: the status decides the blocked
     # case, because this site's refusal has no marker to detect.
-    state = detect_page_state(html, status=upstream_status, url=args.url)
+    #
+    # detect_page_state returns (state, detail). Compared as a whole, the
+    # tuple never equalled "blocked", so this branch could not fire and a
+    # refusal fell through to "0 rows" and exit 4.
+    state, _detail = detect_page_state(html, status=upstream_status, url=args.url)
+    if state == "not_found":
+        logger.error("Montblanc answered that %s does not exist (upstream "
+                     "HTTP %s). Check the URL, locale and category path. "
+                     "Exit 5: nothing was read, which is not the same as an "
+                     "empty catalogue (exit 4).", args.url, upstream_status)
+        return EXIT_API_ERROR
     if state == "blocked":
         dump = f"{args.out}_scraperapi_debug.html"
         with open(dump, "w", encoding="utf-8") as f:
@@ -373,6 +383,13 @@ def parse_args():
     if not args.url:
         p.error("no --url given, and MONTBLANC_URL is not set in the environment "
                 "or in .env.")
+    # Here --retries counts EXTRA attempts (0 means "try once"), each one a
+    # billable task, so 0 is legal and a negative number is a typo.
+    if args.retries < 0:
+        p.error("--retries must be 0 or more (it counts extra, billable "
+                "attempts), got %d" % args.retries)
+    if args.retry_delay < 0:
+        p.error("--retry-delay must be 0 or more, got %d" % args.retry_delay)
     return args
 
 

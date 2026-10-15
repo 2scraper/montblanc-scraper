@@ -62,7 +62,7 @@ license-files = ["LICENSE"]
 # CONTRIBUTING.md for why) — tests/test_smoke.py wraps it as a single pytest
 # test so `pytest` works as an entry point without maintaining two copies of
 # the same checks. Deliberately no COUNT here: an inherited number in a
-# comment nobody re-measures is CLAUDE.md §13's trap, and this one arrived
+# comment nobody re-measures is the trap, and this one arrived
 # from a sibling repo already wrong. `python3 smoke_test.py` prints it. Scoped to tests/ so pytest doesn't also try, and fail,
 # to collect the engine scripts and product_parser.py as test modules.
 testpaths = ["tests"]
