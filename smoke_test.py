@@ -2318,14 +2318,14 @@ def check_captcha_capability_claims_match_the_code():
     # rots the moment the site switches a bot manager on.
     #
     # So the claim has to be PAIRED with the thing that would retest it — the
-    # daily canary — rather than left as a sentence nobody re-measures.
+    # scheduled canary — rather than left as a sentence nobody re-measures.
     claims_no_key = ("no, and it would be dishonest" in low
                      or "do i need a 2captcha account" in low)
     if claims_no_key:
         check("README pairs 'no key needed' with the canary that retests it",
               "canary" in low,
               "a claim that the site is ungated goes stale silently; the "
-              "daily canary is what turns it back into a measurement")
+              "scheduled canary is what turns it back into a measurement")
         check("...and dates the measurement it rests on",
               re.search(r"20\d\d-\d\d-\d\d", readme) is not None,
               "a number describing a living thing needs its moment")
