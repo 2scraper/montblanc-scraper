@@ -10,6 +10,8 @@ When it does, the release notes lead with it.
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-10-16
+
 > **Behaviour changes.** A URL Montblanc answers with HTTP 404 (or its own
 > error page) now ends exit **5** with `stop_reason: not_found`, not exit 4
 > "zero products". `--pages 0`, `--concurrency 0` and a negative `--delay`,
@@ -505,6 +507,7 @@ which caught two checks that were passing for the wrong reason, one because
 its fixture carried no carousel and one because its "escaped" fixture
 contained a marker verbatim.
 
+[0.2.0]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.2.0
 [0.1.4]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.4
 [0.1.3]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.3
 [0.1.2]: https://github.com/2scraper/montblanc-scraper/releases/tag/v0.1.2
