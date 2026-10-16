@@ -10,6 +10,12 @@ When it does, the release notes lead with it.
 
 ## [Unreleased]
 
+### Changed
+
+- CI only: the canary's paid `scraping-browser` job now runs weekly (Mondays
+  05:40 UTC) and on a manual dispatch; the free `listing` and `product` jobs
+  still run daily.
+
 ## [0.2.0] — 2026-10-16
 
 > **Behaviour changes.** A URL Montblanc answers with HTTP 404 (or its own
