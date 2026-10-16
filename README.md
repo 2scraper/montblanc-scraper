@@ -389,10 +389,10 @@ and fails if that engine's group reports a skip.
 Fixtures are cut from real captures taken 2026-09-17 and each was verified to
 parse to identical values to its untrimmed original before being committed.
 
-`canary.yml` runs a real 3-page scrape daily and asserts `status == complete`,
+`canary.yml` runs a real 3-page scrape weekly (Mondays) and asserts `status == complete`,
 a product floor, and price coverage. It needs no credentials, which is the
 point: if Montblanc ever puts its catalogue behind a key or a challenge, the
-badge goes red the next morning and this README's central claim is retested
+badge goes red on the next weekly run and this README's central claim is retested
 without anyone remembering to.
 
 ---

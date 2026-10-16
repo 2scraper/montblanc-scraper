@@ -7,7 +7,7 @@
 # scrape this site: measured 2026-09-17 from a datacenter address, listings,
 # search and product pages all answered HTTP 200 with no key, no proxy and no
 # challenge of any kind. A GitHub runner is a datacenter address too, so this
-# workflow re-measures that claim every morning.
+# workflow re-measures that claim every Monday.
 #
 # **A canary that CAN pass without a credential must never be gated on
 # one.** If Montblanc ever puts its
@@ -15,8 +15,7 @@
 # morning and the README's claim is retested without anyone remembering to.
 #
 # The third job exercises the PAID path (the Scraping Browser API over CDP),
-# which cannot run without a secret and bills a session, so it runs on the
-# weekly (Monday) schedule and on a manual dispatch only. Without the secret it FAILS with an
+# which cannot run without a secret. Without the secret it FAILS with an
 # ::error:: naming it rather than going green: a job that skips reads as a
 # pass and has tested nothing.
 #
@@ -31,9 +30,6 @@ on:
   schedule:
     # 05:40 UTC. Not on the hour: every scheduled workflow on GitHub fires at
     # :00 and the queue there is long.
-    - cron: "40 5 * * *"
-    # Mondays only: the paid job (scraping-browser) runs on this
-    # schedule (each run bills); the free jobs keep the daily one above.
     - cron: "40 5 * * 1"
   workflow_dispatch:
 
@@ -369,8 +365,6 @@ jobs:
 
   scraping-browser:
     name: Scraping Browser API (needs a secret)
-    # Paid path: weekly schedule or a manual dispatch only.
-    if: github.event_name != 'schedule' || github.event.schedule == '40 5 * * 1'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:

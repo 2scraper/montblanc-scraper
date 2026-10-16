@@ -16,7 +16,7 @@ Measured on 2026-09-17 from a bare datacenter address (Hetzner, Helsinki) with n
 
 Say that plainly instead of selling around it. What the paid products below actually buy on this site is **a specific market**: Montblanc serves every market from one host with the locale in the URL path, and it **sets prices per market rather than converting them** — one backpack was EUR 2000 on `en-fi`, EUR 1900 on `de-de`, GBP 1700 on `en-gb` and USD 1990 on `en-us`. Two of those share a currency and still disagree. They also buy volume from many addresses, and not having to run a browser at all.
 
-The repository's canary runs a real three-page scrape **daily, with no secrets**, and is expected to be green — which is what keeps the claim above from going stale quietly.
+The repository's canary runs a real three-page scrape **weekly (Mondays), with no secrets**, and is expected to be green — which is what keeps the claim above from going stale quietly.
 
 Full numbers are in the [repository README](https://github.com/2scraper/montblanc-scraper#readme).
 
