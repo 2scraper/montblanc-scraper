@@ -1,4 +1,4 @@
-# montblanc-scraper
+# Montblanc Scraper — Per-Market Prices, Stock and Variants in Python
 
 [![release](https://img.shields.io/github/v/release/2scraper/montblanc-scraper?sort=semver)](https://github.com/2scraper/montblanc-scraper/releases)
 [![tests](https://github.com/2scraper/montblanc-scraper/actions/workflows/tests.yml/badge.svg)](https://github.com/2scraper/montblanc-scraper/actions/workflows/tests.yml)
@@ -7,6 +7,8 @@
 [![licence](https://img.shields.io/badge/licence-MIT-green)](LICENSE)
 [![engines](https://img.shields.io/badge/engines-Playwright%20%7C%20Selenium%20%7C%20Puppeteer-informational)](#engines)
 [![runs without an account](https://img.shields.io/badge/runs%20without%20an%20account-yes-brightgreen)](#do-i-need-a-2captcha-account)
+
+**Montblanc scraper** — an open-source (MIT) Python tool that reads montblanc.com category listings, keyword searches and product pages, and writes per-market prices, stock, collections and each product's full variant table to JSON or CSV. On 2026-09-17 a bare datacenter address with no key, no proxy and no browser fingerprinting got HTTP 200 on a category listing, a keyword search and a product page, and no challenge appeared on any capture. Use it to monitor prices in one market over time, or compare two runs from the same market with `diff_runs.py`.
 
 Scrapes **montblanc.com**: category listings, keyword searches, and product
 pages with their full variant table. Playwright, Selenium or Puppeteer
@@ -409,6 +411,23 @@ Check `montblanc.com/robots.txt` and the site's terms yourself, keep
 is one page at a time.
 
 ---
+
+## Guides
+
+- [How to run the 2scraper scrapers: setup, proxies, exit codes and access modes](https://2captcha.com/h/how-to-run-2scraper-open-source-scrapers) — installation, `.env`, `.meta.json` for the whole family.
+
+## Related scrapers
+
+Same CLI conventions, same output contract (one row per item, JSON or CSV, a `.meta.json` sidecar and shared exit codes):
+
+- [Pottery Barn scraper](https://github.com/2scraper/potterybarn-scraper) — Every product in a Pottery Barn category, and every SKU's…
+- [Rakuten Ichiba scraper](https://github.com/2scraper/rakuten-scraper) — Japan's largest marketplace
+- [SHEIN scraper](https://github.com/2scraper/shein-scraper) — us.shein.com search, category and product pages…
+- [Sleep Number scraper](https://github.com/2scraper/sleepnumber-scraper) — Smart beds, mattresses and bedding from sleepnumber.com
+- [StockX scraper](https://github.com/2scraper/stockx-scraper) — Search results, category listings and product pages
+- [TikTok Shop scraper](https://github.com/2scraper/tiktok-shop-scraper) — Product pages
+
+All scrapers: [github.com/2scraper](https://github.com/2scraper) · Need another site? [Open a request](https://github.com/2scraper/.github/issues/new?title=%5BScraper%20request%5D%20)
 
 ## Licence
 
