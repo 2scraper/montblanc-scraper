@@ -397,6 +397,11 @@ point: if Montblanc ever puts its catalogue behind a key or a challenge, the
 badge goes red on the next weekly run and this README's central claim is retested
 without anyone remembering to.
 
+A third canary job runs one page through the Scraping Browser API over CDP. It
+needs the `MONTBLANC_CDP_ENDPOINT` repository secret and **fails**, rather than
+skips, when the secret is absent: a skipped job would show green while the paid
+path went untested.
+
 ---
 
 ## Legal and courtesy
@@ -425,7 +430,7 @@ Same CLI conventions, same output contract (one row per item, JSON or CSV, a `.m
 - [SHEIN scraper](https://github.com/2scraper/shein-scraper) — us.shein.com search, category and product pages…
 - [Sleep Number scraper](https://github.com/2scraper/sleepnumber-scraper) — Smart beds, mattresses and bedding from sleepnumber.com
 - [StockX scraper](https://github.com/2scraper/stockx-scraper) — Search results, category listings and product pages
-- [TikTok Shop scraper](https://github.com/2scraper/tiktok-shop-scraper) — Product pages
+- [TikTok Shop scraper](https://github.com/2scraper/tiktok-shop-scraper) — Product pages to 39 columns
 
 All scrapers: [github.com/2scraper](https://github.com/2scraper) · Need another site? [Open a request](https://github.com/2scraper/.github/issues/new?title=%5BScraper%20request%5D%20)
 

@@ -13,6 +13,11 @@ When it does, the release notes lead with it.
 ### Changed
 
 - CI only: the whole canary, free and paid jobs alike, now runs weekly (Mondays 05:40 UTC) and on a manual dispatch; the daily schedule is removed.
+- README: the "Related scrapers" list is complete again, and the Tests section describes the canary's Scraping Browser job and why it fails rather than skips without its secret.
+
+### Fixed
+
+- Tests only: the README column-count check read a sibling repository's column count in "Related scrapers" as a claim about this schema and failed. It now ignores that section and still checks the rest of the README.
 
 ## [0.2.0] — 2026-10-16
 

@@ -2240,7 +2240,11 @@ def check_readme_numbers_are_not_stale():
               P.pages_available(280, 24), 12)
     from output_writer import Product
     column_count = len(fields(Product))
-    claimed = re.findall(r"(\d+)\s+columns", readme)
+    # "## Related scrapers" describes OTHER repositories, whose rows have
+    # their own widths; a sibling's "39 columns" there is not a claim about
+    # this schema. Every other section is still checked.
+    own = re.sub(r"(?ms)^## Related scrapers\b.*?(?=^## |\Z)", "", readme)
+    claimed = re.findall(r"(\d+)\s+columns", own)
     for number in claimed:
         equal("the README's column count matches the schema",
               int(number), column_count)
