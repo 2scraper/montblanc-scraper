@@ -17,6 +17,7 @@ When it does, the release notes lead with it.
 
 ### Fixed
 
+- `--mode product`: a product with no variants no longer names itself in `variant_of` and `base_sku`. As observed on 2026-11-05, Montblanc now publishes such a product as a `ProductGroup` whose only variant is the product itself, where it used to publish a plain `Product`; both shapes now give one row with `variant_of` and `base_sku` empty. Real variant groups are unchanged.
 - Tests only: the README column-count check read a sibling repository's column count in "Related scrapers" as a claim about this schema and failed. It now ignores that section and still checks the rest of the README.
 
 ## [0.2.0] — 2026-10-16

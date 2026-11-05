@@ -1802,12 +1802,21 @@ def parse_product_detail(html: str, base_url: str = "", *,
             sort=sort, fallback_sku=group_sku))
         return rows
 
+    # A group whose ONLY variant carries the group's own sku is a product
+    # with no variants in a group wrapper. Montblanc served that shape for
+    # plain products on 2026-11-05 (5 of 5 sampled single-variant pages),
+    # where it used to serve a bare `Product`. Same rule as the bare shape:
+    # no `variant_of`, because there is no larger group above the product.
+    self_group = (len(variants) == 1 and group_sku is not None
+                  and _str_or_none(variants[0].get("sku")) == group_sku)
+
     for index, variant in enumerate(variants, start=1):
         rows.append(_detail_row(
             variant, _ld_offer(variant), base_url=base_url, locale=locale,
             locale_cur=locale_cur, brand=_brand_name(variant) or group_brand,
             image=_ld_image(variant.get("image")) or group_image,
-            category=category, variant_of=group_sku, position=index,
+            category=category,
+            variant_of=None if self_group else group_sku, position=index,
             mode=mode, sort=sort, fallback_sku=None))
     return rows
 
